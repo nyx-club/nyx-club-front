@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { MapPin, Mail, Phone, Clock, Instagram, Facebook, Twitter } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { MapPin, Mail, Phone, Clock, Instagram, Heart } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -14,9 +12,9 @@ export default function ContactPage() {
         <div className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
             <div className="relative w-8 h-8">
-              <Image src="/images/nyx-symbol.png" alt="Club NYX" fill className="object-contain" />
+              <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" />
             </div>
-            <span className="text-xl font-bold text-white">CLUB NYX</span>
+            <span className="text-xl font-bold text-white">NYX CLUB</span>
           </Link>
 
           <nav className="flex items-center space-x-8">
@@ -41,7 +39,9 @@ export default function ContactPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              ¿Tienes preguntas sobre membresía o nuestros eventos? Estamos aquí para ayudarte.
+              ¿Tienes preguntas sobre membresía o nuestros eventos?
+              <br />
+              Estamos aquí para ayudarte.
             </p>
           </div>
 
@@ -60,9 +60,8 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-white mb-1">Ubicación</h3>
-                          <p className="text-gray-300">Avenida Exclusiva 123</p>
-                          <p className="text-gray-300">Distrito Centro</p>
-                          <p className="text-gray-300">Madrid, España 28001</p>
+                          <p className="text-gray-300">Calle de Amaniel 13</p>
+                          <p className="text-gray-300">Madrid, Madrid España 28015</p>
                         </div>
                       </div>
                     </CardContent>
@@ -76,8 +75,7 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-white mb-1">Correo Electrónico</h3>
-                          <p className="text-gray-300">info@clubnyx.com</p>
-                          <p className="text-gray-300">membresia@clubnyx.com</p>
+                          <p className="text-gray-300">info@clubnyx.net</p>
                         </div>
                       </div>
                     </CardContent>
@@ -91,8 +89,7 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-white mb-1">Teléfono</h3>
-                          <p className="text-gray-300">+34 91 123 4567</p>
-                          <p className="text-sm text-gray-400">Lunes - Viernes, 10:00 - 18:00</p>
+                          <p className="text-gray-300">+34 602 08 30 14</p>
                         </div>
                       </div>
                     </CardContent>
@@ -105,11 +102,11 @@ export default function ContactPage() {
                           <Clock className="w-6 h-6 text-[#B20118]" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-white mb-1">Horarios de Operación</h3>
+                          <h3 className="text-lg font-semibold text-white mb-1">Horarios</h3>
                           <div className="space-y-1 text-gray-300">
-                            <p>Lunes - Jueves: 18:00 - 00:00</p>
-                            <p>Viernes - Sábado: 18:00 - 02:00</p>
-                            <p>Domingo: Cerrado</p>
+                            <p>Lunes - Jueves: 16:00 p.m. - 04:00 a.m.</p>
+                            <p>Viernes - Domingo: 16:00 p.m. - 06:00 a.m.</p>
+                            <p>Lunes: Cerrado</p>
                           </div>
                         </div>
                       </div>
@@ -123,122 +120,19 @@ export default function ContactPage() {
                 <h3 className="text-xl font-semibold mb-4">Síguenos</h3>
                 <div className="flex space-x-4">
                   <Link
-                    href="#"
+                    href="https://www.instagram.com/nyx_club_madrid"
                     className="w-12 h-12 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#B20118] hover:border-[#B20118] transition-colors"
                   >
                     <Instagram className="w-5 h-5" />
                   </Link>
                   <Link
-                    href="#"
+                    href="https://fetlife.com/NYX_BDSM_CLUB"
                     className="w-12 h-12 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#B20118] hover:border-[#B20118] transition-colors"
                   >
-                    <Facebook className="w-5 h-5" />
-                  </Link>
-                  <Link
-                    href="#"
-                    className="w-12 h-12 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center justify-center text-gray-400 hover:text-[#B20118] hover:border-[#B20118] transition-colors"
-                  >
-                    <Twitter className="w-5 h-5" />
+                    <Heart className="w-5 h-5" />
                   </Link>
                 </div>
               </div>
-            </div>
-
-            {/* Contact Form */}
-            <div>
-              <Card className="bg-[#B20118]/10 border-[#B20118]/30">
-                <CardHeader>
-                  <CardTitle className="text-white text-2xl">Envíanos un Mensaje</CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Te responderemos dentro de 24 horas durante días laborables.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
-                        Nombre
-                      </label>
-                      <Input
-                        id="firstName"
-                        placeholder="Tu nombre"
-                        className="bg-black border-[#B20118]/20 text-white placeholder:text-gray-500 focus:border-[#B20118]"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
-                        Apellidos
-                      </label>
-                      <Input
-                        id="lastName"
-                        placeholder="Tus apellidos"
-                        className="bg-black border-[#B20118]/20 text-white placeholder:text-gray-500 focus:border-[#B20118]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                      Correo Electrónico
-                    </label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="tu.correo@ejemplo.com"
-                      className="bg-black border-[#B20118]/20 text-white placeholder:text-gray-500 focus:border-[#B20118]"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-2">
-                      Número de Teléfono (Opcional)
-                    </label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+34 91 123 4567"
-                      className="bg-black border-[#B20118]/20 text-white placeholder:text-gray-500 focus:border-[#B20118]"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-gray-300 mb-2">
-                      Asunto
-                    </label>
-                    <Input
-                      id="subject"
-                      placeholder="¿De qué se trata?"
-                      className="bg-black border-[#B20118]/20 text-white placeholder:text-gray-500 focus:border-[#B20118]"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-2">
-                      Mensaje
-                    </label>
-                    <Textarea
-                      id="message"
-                      placeholder="Cuéntanos cómo podemos ayudarte..."
-                      rows={6}
-                      className="bg-black border-[#B20118]/20 text-white placeholder:text-gray-500 focus:border-[#B20118] resize-none"
-                    />
-                  </div>
-
-                  <Button className="w-full bg-[#B20118] hover:bg-[#8B0112] text-white py-3">Enviar Mensaje</Button>
-
-                  <p className="text-xs text-gray-500 text-center">
-                    Al enviar este formulario, aceptas nuestra{" "}
-                    <Link href="/privacy" className="text-[#B20118] hover:text-[#8B0112]">
-                      Política de Privacidad
-                    </Link>{" "}
-                    y{" "}
-                    <Link href="/terms" className="text-[#B20118] hover:text-[#8B0112]">
-                      Términos de Servicio
-                    </Link>
-                    .
-                  </p>
-                </CardContent>
-              </Card>
             </div>
           </div>
 
@@ -248,10 +142,9 @@ export default function ContactPage() {
               <CardContent className="p-8">
                 <h3 className="text-2xl font-semibold text-white mb-4">Consultas de Membresía</h3>
                 <p className="text-gray-300 mb-6 leading-relaxed">
-                  ¿Interesado en convertirte en miembro? Damos la bienvenida a solicitudes de personas de 21 años o más
+                  ¿Interesado en convertirte en miembro? Damos la bienvenida a solicitudes de personas de 18 años o más
                   que estén comprometidas con nuestros valores comunitarios de respeto, seguridad y educación. Todos los
-                  miembros potenciales deben completar un proceso de solicitud y asistir a una sesión de orientación
-                  obligatoria.
+                  miembros potenciales deben interiorizar los valores de la comunidad.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
@@ -260,7 +153,6 @@ export default function ContactPage() {
                   >
                     Descargar Solicitud de Membresía
                   </Button>
-                  <Button className="bg-[#B20118] hover:bg-[#8B0112] text-white">Programar Orientación</Button>
                 </div>
               </CardContent>
             </Card>
@@ -274,13 +166,13 @@ export default function ContactPage() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
               <div className="relative w-6 h-6">
-                <Image src="/images/nyx-symbol.png" alt="Club NYX" fill className="object-contain" />
+                <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" />
               </div>
-              <span className="text-lg font-bold text-white">CLUB NYX</span>
+              <span className="text-lg font-bold text-white">NYX CLUB</span>
             </div>
 
             <div className="text-sm text-gray-400 text-center md:text-right">
-              <p>&copy; {new Date().getFullYear()} Club NYX. Todos los derechos reservados.</p>
+              <p>&copy; {new Date().getFullYear()} Nyx Club. Todos los derechos reservados.</p>
               <p className="mt-1">
                 <Link href="/privacy" className="hover:text-[#B20118] transition-colors">
                   Política de Privacidad

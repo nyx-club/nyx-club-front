@@ -11,7 +11,7 @@ export default function HomePage() {
           {/* Main NYX Symbol - Increased Size */}
           <div className="mb-12">
             <div className="relative w-80 h-80 md:w-96 md:h-96 lg:w-[500px] lg:h-[500px] xl:w-[600px] xl:h-[600px] mx-auto mb-8">
-              <Image src="/images/nyx-logo.jpg" alt="Símbolo del Club NYX" fill className="object-contain" priority />
+              <Image src="/images/nyx-logo.jpg" alt="Símbolo del Nyx Club" fill className="object-contain" priority />
             </div>
 
             {/* Tagline in Spanish */}
@@ -82,12 +82,12 @@ export default function HomePage() {
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-2">
               <div className="relative w-6 h-6">
-                <Image src="/images/nyx-symbol.png" alt="Club NYX" fill className="object-contain" />
+                <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" />
               </div>
-              <span className="text-lg font-bold text-white">CLUB NYX</span>
+              <span className="text-lg font-bold text-white">NYX CLUB</span>
             </div>
             <div className="text-sm text-gray-400">
-              <p>&copy; {new Date().getFullYear()} Club NYX. Todos los derechos reservados.</p>
+              <p>&copy; {new Date().getFullYear()} Nyx Club. Todos los derechos reservados.</p>
               <p className="mt-1">
                 <Link href="/privacy" className="hover:text-[#B20118] transition-colors">
                   Política de Privacidad
