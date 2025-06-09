@@ -30,6 +30,20 @@ import {
 import Link from "next/link"
 import Image from "next/image"
 
+// Add this right after the imports
+const mobileStyles = `
+  @media (max-width: 768px) {
+    [data-radix-popper-content-wrapper] {
+      z-index: 50 !important;
+    }
+    
+    .mobile-filter-dropdown {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+`
+
 // Event categories with their properties in Spanish and custom red
 const eventCategories = {
   shibari: {
@@ -239,27 +253,33 @@ export default function EventsPage() {
     }
   }
 
-  // Toggle a filter
+  // Improved filter functions
   const toggleFilter = (category) => {
     setActiveFilters((prev) => {
-      // If the category is already in the filters, remove it
       if (prev.includes(category)) {
         // Don't allow removing all filters
-        if (prev.length === 1) return prev
-        return prev.filter((c) => c !== category)
+        const newFilters = prev.filter((c) => c !== category)
+        if (newFilters.length === 0) return prev
+        setViewMode("custom")
+        return newFilters
+      } else {
+        // Add the category
+        const newFilters = [...prev, category]
+        if (newFilters.length === Object.keys(eventCategories).length) {
+          setViewMode("all")
+        } else {
+          setViewMode("custom")
+        }
+        return newFilters
       }
-      // Otherwise add it
-      return [...prev, category]
     })
   }
 
-  // Set all filters
   const setAllFilters = () => {
     setActiveFilters(Object.keys(eventCategories))
     setViewMode("all")
   }
 
-  // Set a single filter
   const setSingleFilter = (category) => {
     setActiveFilters([category])
     setViewMode(category)
@@ -346,40 +366,79 @@ export default function EventsPage() {
               </Tabs>
             </div>
 
-            {/* Mobile Dropdown */}
+            {/* Mobile Dropdown - Fixed Implementation */}
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between border-[#B20118]/30 bg-[#B20118]/10">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between border-[#B20118]/30 bg-[#B20118]/10 text-white mobile-filter-dropdown"
+                  >
                     <div className="flex items-center">
                       <Filter className="mr-2 h-4 w-4" />
                       <span>
                         {activeFilters.length === Object.keys(eventCategories).length
                           ? "Todos los Eventos"
-                          : `${activeFilters.length} ${activeFilters.length === 1 ? "Categoría" : "Categorías"}`}
+                          : activeFilters.length === 1
+                            ? eventCategories[activeFilters[0]]?.name || "1 Categoría"
+                            : `${activeFilters.length} Categorías`}
                       </span>
                     </div>
-                    <ChevronRight className="h-4 w-4 ml-2" />
+                    <ChevronRight className="h-4 w-4 ml-2 transition-transform ui-open:rotate-90" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[200px]">
+                <DropdownMenuContent className="w-[280px] bg-gray-900 border-[#B20118]/30" align="start">
                   <DropdownMenuCheckboxItem
                     checked={activeFilters.length === Object.keys(eventCategories).length}
-                    onCheckedChange={() => setAllFilters()}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setAllFilters()
+                      }
+                    }}
+                    className="text-white hover:bg-[#B20118]/20 focus:bg-[#B20118]/20"
                   >
-                    Todos los Eventos
+                    <div className="flex items-center">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      Todos los Eventos
+                    </div>
                   </DropdownMenuCheckboxItem>
+                  <div className="border-t border-gray-700 my-1"></div>
                   {Object.entries(eventCategories).map(([key, category]) => (
                     <DropdownMenuCheckboxItem
                       key={key}
                       checked={activeFilters.includes(key)}
-                      onCheckedChange={() => toggleFilter(key)}
-                      className="flex items-center"
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          // Add this category to filters
+                          setActiveFilters((prev) => [...prev.filter((f) => f !== key), key])
+                        } else {
+                          // Remove this category from filters, but don't allow removing all
+                          setActiveFilters((prev) => {
+                            const newFilters = prev.filter((f) => f !== key)
+                            return newFilters.length === 0 ? prev : newFilters
+                          })
+                        }
+                      }}
+                      className={`text-white hover:bg-[#B20118]/20 focus:bg-[#B20118]/20 ${
+                        activeFilters.includes(key) ? category.textColor : ""
+                      }`}
                     >
-                      <category.icon className="mr-2 h-4 w-4" />
-                      {category.name}
+                      <div className="flex items-center">
+                        <category.icon className="mr-2 h-4 w-4" />
+                        {category.name}
+                      </div>
                     </DropdownMenuCheckboxItem>
                   ))}
+                  <div className="border-t border-gray-700 my-1"></div>
+                  <DropdownMenuCheckboxItem
+                    onSelect={() => setAllFilters()}
+                    className="text-gray-400 hover:bg-[#B20118]/20 focus:bg-[#B20118]/20 hover:text-white"
+                  >
+                    <div className="flex items-center">
+                      <X className="mr-2 h-4 w-4" />
+                      Limpiar todos los filtros
+                    </div>
+                  </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
