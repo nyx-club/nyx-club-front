@@ -75,32 +75,6 @@ export default function HomePage() {
           <div className="absolute top-3/4 right-1/3 w-48 h-48 bg-[#B20118]/4 rounded-full blur-2xl"></div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[#B20118]/20 py-6">
-        <div className="container mx-auto px-4 lg:px-6">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-2">
-              <div className="relative w-6 h-6">
-                <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" />
-              </div>
-              <span className="text-lg font-bold text-white">NYX CLUB</span>
-            </div>
-            <div className="text-sm text-gray-400">
-              <p>&copy; {new Date().getFullYear()} Nyx Club. Todos los derechos reservados.</p>
-              <p className="mt-1">
-                <Link href="/privacy" className="hover:text-[#B20118] transition-colors">
-                  Política de Privacidad
-                </Link>
-                {" • "}
-                <Link href="/terms" className="hover:text-[#B20118] transition-colors">
-                  Términos de Servicio
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

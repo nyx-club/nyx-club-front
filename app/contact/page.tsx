@@ -6,27 +6,7 @@ import Image from "next/image"
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <header className="border-b border-[#B20118]/20 bg-black/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="relative w-8 h-8">
-              <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" />
-            </div>
-            <span className="text-xl font-bold text-white">NYX CLUB</span>
-          </Link>
-
-          <nav className="flex items-center space-x-8">
-            <Link href="/events" className="text-gray-300 hover:text-[#B20118] transition-colors">
-              Eventos
-            </Link>
-            <Link href="/contact" className="text-[#B20118] transition-colors">
-              Contacto
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="min-h-screen">
 
       {/* Main Content */}
       <main className="pt-16 pb-16">
@@ -159,33 +139,6 @@ export default function ContactPage() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[#B20118]/20 py-8">
-        <div className="container mx-auto px-4 lg:px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="relative w-6 h-6">
-                <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" />
-              </div>
-              <span className="text-lg font-bold text-white">NYX CLUB</span>
-            </div>
-
-            <div className="text-sm text-gray-400 text-center md:text-right">
-              <p>&copy; {new Date().getFullYear()} Nyx Club. Todos los derechos reservados.</p>
-              <p className="mt-1">
-                <Link href="/privacy" className="hover:text-[#B20118] transition-colors">
-                  Política de Privacidad
-                </Link>
-                {" • "}
-                <Link href="/terms" className="hover:text-[#B20118] transition-colors">
-                  Términos de Servicio
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }
