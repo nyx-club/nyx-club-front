@@ -1,3 +1,4 @@
+import { siteConfig } from "@/config/site";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Clock, Instagram, Heart } from "lucide-react";
@@ -40,9 +41,13 @@ export default function ContactPage() {
                         <h3 className="text-lg font-semibold text-white mb-1">
                           Ubicación
                         </h3>
-                        <p className="text-gray-300">Calle de Amaniel 13</p>
                         <p className="text-gray-300">
-                          Madrid, Madrid España 28015
+                          {siteConfig.contact.address.street}
+                        </p>
+                        <p className="text-gray-300">
+                          {siteConfig.contact.address.city},{" "}
+                          {siteConfig.contact.address.country}{" "}
+                          {siteConfig.contact.address.postalCode}
                         </p>
                       </div>
                     </div>
@@ -61,7 +66,7 @@ export default function ContactPage() {
                         </h3>
                         <div className="flex flex-col space-y-3">
                           <Link
-                            href="https://www.instagram.com/nyx_club_madrid"
+                            href={siteConfig.social.instagram}
                             className="flex items-center space-x-3 text-gray-400 hover:text-[#B20118] group"
                           >
                             <div className="w-10 h-10 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center justify-center group-hover:border-[#B20118] transition-colors">
@@ -70,7 +75,7 @@ export default function ContactPage() {
                             <span className="font-medium">Instagram</span>
                           </Link>
                           <Link
-                            href="https://fetlife.com/NYX_BDSM_CLUB"
+                            href={siteConfig.social.fetlife}
                             className="flex items-center space-x-3 text-gray-400 hover:text-[#B20118] group"
                           >
                             <div className="w-10 h-10 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center justify-center group-hover:border-[#B20118] transition-colors">
@@ -94,7 +99,9 @@ export default function ContactPage() {
                         <h3 className="text-lg font-semibold text-white mb-1">
                           Correo Electrónico
                         </h3>
-                        <p className="text-gray-300">info@clubnyx.net</p>
+                        <p className="text-gray-300">
+                          {siteConfig.contact.email}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -129,27 +136,19 @@ export default function ContactPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
                           <div className="space-y-2">
                             <p className="flex justify-between">
-                              <span className="font-medium">
-                                Miércoles:
-                              </span>
+                              <span className="font-medium">Miércoles:</span>
                               <span>20:00 - 04:30</span>
                             </p>
                             <p className="flex justify-between">
-                              <span className="font-medium">
-                                Jueves:
-                              </span>
+                              <span className="font-medium">Jueves:</span>
                               <span>20:00 - 06:00</span>
                             </p>
                             <p className="flex justify-between">
-                              <span className="font-medium">
-                                Viernes:
-                              </span>
+                              <span className="font-medium">Viernes:</span>
                               <span>22:00 - 06:00</span>
                             </p>
                             <p className="flex justify-between">
-                              <span className="font-medium">
-                                Sábado:
-                              </span>
+                              <span className="font-medium">Sábado:</span>
                               <span>23:00 - 06:00</span>
                             </p>
                           </div>

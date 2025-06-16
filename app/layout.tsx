@@ -1,16 +1,23 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Layout from '@/components/layout/layout'
 
 const inter = Inter({ subsets: ['latin'] })
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#000000',
+}
+
+import { siteConfig } from '@/config/site'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.baseUrl),
   title: 'NYX Club - Comunidad de Arte y Educación',
   description: 'Una comunidad exclusiva dedicada a la educación, seguridad y conexiones significativas en un ambiente sofisticado.',
   keywords: ['NYX Club', 'Shibari', 'Cinefórum', 'Conferencias', 'Madrid', 'Comunidad'],
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#000000',
   openGraph: {
     type: 'website',
     locale: 'es_ES',
