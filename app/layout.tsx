@@ -17,11 +17,12 @@ import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.baseUrl),
-  title: "NYX Club - Comunidad de Arte y Educación",
+  title: "NYX BDSM Club",
   description:
     "Una comunidad exclusiva dedicada a la educación, seguridad y conexiones significativas en un ambiente sofisticado.",
   keywords: [
-    "NYX Club",
+    "NYX BDSM Club",
+    "BDSM",
     "Shibari",
     "Cinefórum",
     "Conferencias",
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NYX Club - Comunidad de Arte y Educación",
+    title: "NYX BDSM Club",
     description:
       "Una comunidad exclusiva dedicada a la educación, seguridad y conexiones significativas en un ambiente sofisticado.",
     images: ["/images/og-image.jpg"],
