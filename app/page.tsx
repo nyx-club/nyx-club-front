@@ -1,5 +1,5 @@
-import Link from "next/link"
-import Image from "next/image"
+import Link from "next/link";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
@@ -11,19 +11,42 @@ export default function HomePage() {
           {/* Main NYX Symbol - Increased Size */}
           <div className="mb-12">
             <div className="relative w-80 h-80 md:w-96 md:h-96 lg:w-[500px] lg:h-[500px] xl:w-[600px] xl:h-[600px] mx-auto mb-8">
-              <Image src="/images/nyx-logo.jpg" alt="Símbolo del Nyx Club" fill className="object-contain" priority />
+              <Image
+                src="/images/nyx-logo.jpg"
+                alt="Símbolo del Nyx Club"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
 
             {/* Tagline in Spanish */}
             <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
-              Una comunidad exclusiva dedicada a la educación, seguridad y conexiones significativas en un ambiente
-              sofisticado.
+              Del Caos surgió y NYX creó la noche y reinó sobre ella. Deidad
+              poderosa y oscura que representa el espacio que quiere ser.
+            </p>
+            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
+              Un espacio inclusivo, amable con quienes lo respeten, e implacable
+              para los que intenten hacer mal uso de lo que encarna.{" "}
+            </p>
+            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
+              Todo lo que imaginas e incluya una relación entre adultos capaces
+              y sea SENSATO, SEGURO Y CONSENSUADO, está permitido. Todo está
+              empezando, así que las propuestas, las ideas, las criticas
+              constructivas o las destructivas, si aportan alternativas viables,
+              serán escuchadas siempre que sumen para la comunidad.
+            </p>
+            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
+              Así que sólo resta decir BIENVENID@S A TOD@S!!!
             </p>
           </div>
 
           {/* Vertical Navigation Menu with Custom Red */}
           <nav className="space-y-6">
-            <Link href="/events" className="group relative block w-full max-w-xs mx-auto">
+            <Link
+              href="/events"
+              className="group relative block w-full max-w-xs mx-auto"
+            >
               <div className="bg-[#B20118]/20 border border-[#B20118]/40 rounded-lg p-6 hover:bg-[#B20118]/30 hover:border-[#B20118]/60 transition-all duration-300 backdrop-blur-sm">
                 <div className="flex items-center justify-center space-x-4">
                   <div className="relative w-8 h-8 flex-shrink-0">
@@ -44,7 +67,10 @@ export default function HomePage() {
               </div>
             </Link>
 
-            <Link href="/contact" className="group relative block w-full max-w-xs mx-auto">
+            <Link
+              href="/contact"
+              className="group relative block w-full max-w-xs mx-auto"
+            >
               <div className="bg-[#B20118]/20 border border-[#B20118]/40 rounded-lg p-6 hover:bg-[#B20118]/30 hover:border-[#B20118]/60 transition-all duration-300 backdrop-blur-sm">
                 <div className="flex items-center justify-center space-x-4">
                   <div className="relative w-8 h-8 flex-shrink-0">
@@ -76,5 +102,5 @@ export default function HomePage() {
         </div>
       </main>
     </div>
-  )
+  );
 }
