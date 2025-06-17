@@ -310,6 +310,20 @@ const EventModal = ({
             </div>
           )}
 
+          {/* Show images gallery if present */}
+          {event.images && event.images.length > 0 && (
+            <div className="mb-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+              {event.images.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt={event.title + ' image ' + (idx + 1)}
+                  className="w-full h-40 object-cover rounded-lg border border-[#B20118]/20"
+                />
+              ))}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
               <h3 className="text-lg font-semibold mb-2">Descripción</h3>
