@@ -8,13 +8,14 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
             <div className="relative w-6 h-6">
-              <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" />
+              <Image src="/images/nyx-symbol.png" alt="NYX BDSM CLUB" fill className="object-contain" />
             </div>
-            <span className="text-lg font-bold text-white">NYX CLUB</span>
+            <span className="text-lg font-bold text-white">NYX BDSM CLUB</span>
           </div>
 
           <div className="text-sm text-gray-400 text-center md:text-right">
-            <p>&copy; {new Date().getFullYear()} Nyx Club. Todos los derechos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} NYX BDSM CLUB</p>
+            <p>Todos los derechos reservados.</p>
             <p className="mt-1">
               <Link href="/privacy" className="hover:text-[#B20118] transition-colors">
                 Política de Privacidad

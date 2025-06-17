@@ -7,9 +7,9 @@ export default function Header({ currentPage = 'home' }: { currentPage?: 'home' 
       <div className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <div className="relative w-8 h-8">
-            <Image src="/images/nyx-symbol.png" alt="Nyx Club" fill className="object-contain" priority />
+            <Image src="/images/nyx-symbol.png" alt="NYX BDSM CLUB" fill className="object-contain" priority />
           </div>
-          <span className="text-xl font-bold text-white">NYX CLUB</span>
+          <span className="text-xl font-bold text-white">NYX BDSM CLUB</span>
         </Link>
 
         <nav className="flex items-center space-x-8">
