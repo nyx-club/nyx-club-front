@@ -22,6 +22,7 @@ export interface Event {
   mainImage: string
   images: string[]
   tags: string[]
+  link?: string | null
 }
 
 export interface EventFilters {
