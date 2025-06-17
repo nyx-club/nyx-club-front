@@ -1,10 +1,10 @@
 import { Event, EventCategory, EventCategoryData } from "@/types/event"
-import { Rope, BookOpen, Film } from "lucide-react"
+import { BookOpen, Film, Ribbon } from "lucide-react"
 
 export const eventCategories: Record<EventCategory, EventCategoryData> = {
   shibari: {
     name: "Shibari",
-    icon: Rope,
+    icon: Ribbon,
     color: "from-[#B20118] to-[#8B0112]",
     bgColor: "bg-[#B20118]/20",
     borderColor: "border-[#B20118]/50",
