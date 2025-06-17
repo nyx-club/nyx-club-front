@@ -3,7 +3,7 @@ import { BookOpen, Film, Ribbon } from "lucide-react"
 
 export const eventCategories: Record<EventCategory, EventCategoryData> = {
   shibari: {
-    name: "Shibari",
+    name: "Shibari: Ata2",
     icon: Ribbon,
     color: "from-[#B20118] to-[#8B0112]",
     bgColor: "bg-[#B20118]/20",
@@ -21,7 +21,7 @@ export const eventCategories: Record<EventCategory, EventCategoryData> = {
     textColor: "text-purple-400",
   },
   cineforum: {
-    name: "Día de Cinefórum",
+    name: "Cinefórum: La Butaca Roja",
     icon: Film,
     color: "from-blue-500 to-blue-700",
     bgColor: "bg-blue-900/20",
