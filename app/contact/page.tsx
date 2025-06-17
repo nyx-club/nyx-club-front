@@ -1,11 +1,19 @@
-import { siteConfig } from "@/config/site";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Clock, Instagram, Heart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const res = await fetch(
+    "https://nyx-club-back.onrender.com/api/contact-infos?populate=*",
+    { cache: "no-store" }
+  );
+  const { data } = await res.json();
+  const contact = data[0];
+
+  // Strapi v4+ returns flat fields, not under 'attributes'
+
   return (
     <div className="min-h-screen">
       {/* Main Content */}
@@ -42,12 +50,11 @@ export default function ContactPage() {
                           Ubicación
                         </h3>
                         <p className="text-gray-300">
-                          {siteConfig.contact.address.street}
+                          {contact.address.street}
                         </p>
                         <p className="text-gray-300">
-                          {siteConfig.contact.address.city},{" "}
-                          {siteConfig.contact.address.country}{" "}
-                          {siteConfig.contact.address.postalCode}
+                          {contact.address.city}, {contact.address.country}{" "}
+                          {contact.address.postalCode}
                         </p>
                       </div>
                     </div>
@@ -66,8 +73,10 @@ export default function ContactPage() {
                         </h3>
                         <div className="flex flex-col space-y-3">
                           <Link
-                            href={siteConfig.social.instagram}
+                            href={contact.social.instagram}
                             className="flex items-center space-x-3 text-gray-400 hover:text-[#B20118] group"
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
                             <div className="w-10 h-10 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center justify-center group-hover:border-[#B20118] transition-colors">
                               <Instagram className="w-5 h-5" />
@@ -75,8 +84,10 @@ export default function ContactPage() {
                             <span className="font-medium">Instagram</span>
                           </Link>
                           <Link
-                            href={siteConfig.social.fetlife}
+                            href={contact.social.fetlife}
                             className="flex items-center space-x-3 text-gray-400 hover:text-[#B20118] group"
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
                             <div className="w-10 h-10 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center justify-center group-hover:border-[#B20118] transition-colors">
                               <Heart className="w-5 h-5" />
@@ -99,9 +110,7 @@ export default function ContactPage() {
                         <h3 className="text-lg font-semibold text-white mb-1">
                           Correo Electrónico
                         </h3>
-                        <p className="text-gray-300">
-                          {siteConfig.contact.email}
-                        </p>
+                        <p className="text-gray-300">{contact.email}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -117,7 +126,7 @@ export default function ContactPage() {
                         <h3 className="text-lg font-semibold text-white mb-1">
                           Teléfono
                         </h3>
-                        <p className="text-gray-300">+34 602 08 30 14</p>
+                        <p className="text-gray-300">{contact.phone}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -135,27 +144,22 @@ export default function ContactPage() {
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
                           <div className="space-y-2">
-                            <p className="flex justify-between">
-                              <span className="font-medium">Miércoles:</span>
-                              <span>20:00 - 04:30</span>
-                            </p>
-                            <p className="flex justify-between">
-                              <span className="font-medium">Jueves:</span>
-                              <span>20:00 - 06:00</span>
-                            </p>
-                            <p className="flex justify-between">
-                              <span className="font-medium">Viernes:</span>
-                              <span>22:00 - 06:00</span>
-                            </p>
-                            <p className="flex justify-between">
-                              <span className="font-medium">Sábado:</span>
-                              <span>23:00 - 06:00</span>
-                            </p>
+                            {contact.openingHours.map((hour: any) => (
+                              <p className="flex justify-between" key={hour.id}>
+                                <span className="font-medium">{hour.day}:</span>
+                                <span>
+                                  {hour.open} - {hour.close}
+                                </span>
+                              </p>
+                            ))}
                           </div>
                           <div className="flex items-center md:justify-center">
                             <div className="px-4 py-2 bg-[#B20118]/20 rounded-lg">
                               <p className="text-center font-medium">
-                                Domingo - Lunes - Martes: Cerrado
+                                {contact.closedDays}:
+                              </p>
+                              <p className="text-center font-medium">
+                                <b>Cerrado</b>
                               </p>
                             </div>
                           </div>

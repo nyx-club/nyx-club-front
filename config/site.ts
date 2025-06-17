@@ -5,7 +5,7 @@ export const siteConfig = {
     fetlife: process.env.NEXT_PUBLIC_FETLIFE_URL || 'https://fetlife.com/NYX_BDSM_CLUB',
   },
   contact: {
-    email: process.env.NEXT_PUBLIC_EMAIL || 'info@clubnyx.net',
+    email: process.env.NEXT_PUBLIC_EMAIL || 'nyxclubmadrid@gmail.com',
     phone: process.env.NEXT_PUBLIC_PHONE || '+34 602 08 30 14',
     address: {
       street: process.env.NEXT_PUBLIC_ADDRESS || 'Calle de Amaniel 13',
