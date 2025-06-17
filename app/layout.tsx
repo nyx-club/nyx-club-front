@@ -61,6 +61,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="scroll-smooth">
+      <head>
+        <link
+          rel="icon"
+          href="/images/nyx-symbol.png"
+          type="image/png"
+          sizes="any"
+        />
+      </head>
       <body
         className={`${inter.className} bg-black text-white`}
         suppressHydrationWarning={true}
