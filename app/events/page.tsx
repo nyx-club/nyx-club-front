@@ -317,7 +317,7 @@ const EventModal = ({
                 <img
                   key={idx}
                   src={img}
-                  alt={event.title + ' image ' + (idx + 1)}
+                  alt={event.title + " image " + (idx + 1)}
                   className="w-full h-40 object-cover rounded-lg border border-[#B20118]/20"
                 />
               ))}
@@ -431,7 +431,7 @@ const EventModal = ({
             {event.link ? (
               <div className="md:border-l md:pl-6">
                 <div className="bg-[#0a0a0a] border border-[#B20118]/20 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-4">Fetlife</h3>
+                  <h3 className="font-semibold mb-4">Más información</h3>
                   <div className="text-green-500 font-medium mb-4">
                     {event.capacity}
                   </div>
@@ -442,7 +442,7 @@ const EventModal = ({
                     rel="noopener noreferrer"
                     className="w-full block bg-[#B20118] text-white py-2 px-4 rounded-md hover:bg-[#8B0112] transition-colors text-center"
                   >
-                    Más información
+                    Fetlife
                   </a>
 
                   <p className="text-sm text-gray-400 mt-4 text-center">
