@@ -83,21 +83,8 @@ const fetchEvents = async () => {
 // Types
 type ViewMode = "all" | "upcoming" | "past";
 
-// Define event categories with icons
-const EVENT_CATEGORIES = {
-  shibari: {
-    ...eventCategories.shibari,
-    icon: Ribbon,
-  },
-  lecture: {
-    ...eventCategories.lecture,
-    icon: BookOpen,
-  },
-  cineforum: {
-    ...eventCategories.cineforum,
-    icon: FilmIcon,
-  },
-} as const;
+// Use eventCategories directly for consistent icons
+const EVENT_CATEGORIES = eventCategories;
 
 // Calendar component
 const Calendar = ({
@@ -345,10 +332,8 @@ const EventModal = ({
               <div className="space-y-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
-                    <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-full ${category.bgColor}`}
-                    >
-                      <Icon className={`w-5 h-5 ${category.textColor}`} />
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800">
+                      <Icon className="w-5 h-5 text-gray-400" />
                     </div>
                   </div>
                   <div className="ml-4">
