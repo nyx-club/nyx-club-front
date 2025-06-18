@@ -47,6 +47,7 @@ function isLucideComponent(value: any): value is LucideIcon {
 // Fetch events from Strapi
 const fetchEvents = async () => {
   try {
+    // Use a specific populate query for all relations
     const res = await fetch(
       "https://nyx-club-back.onrender.com/api/events?populate=*"
     );
@@ -58,20 +59,13 @@ const fetchEvents = async () => {
         // Support both Strapi v4 (attributes) and v3 (flat)
         const attrs = item.attributes || item;
         // Prefer large format, fallback to main url
+        // Handle new API: mainImage is an object with formats and url
         let mainImageUrl = null;
-        if (attrs.mainImage?.data) {
-          const mainImage = attrs.mainImage.data;
-          if (mainImage.attributes?.formats?.large?.url) {
-            mainImageUrl = mainImage.attributes.formats.large.url.startsWith(
-              "http"
-            )
-              ? mainImage.attributes.formats.large.url
-              : `https://nyx-club-back.onrender.com${mainImage.attributes.formats.large.url}`;
-          } else if (mainImage.attributes?.url) {
-            mainImageUrl = mainImage.attributes.url.startsWith("http")
-              ? mainImage.attributes.url
-              : `https://nyx-club-back.onrender.com${mainImage.attributes.url}`;
-          }
+        if (attrs.mainImage && typeof attrs.mainImage === "object") {
+          const mainImage = attrs.mainImage;
+          // Prefer large, fallback to url
+          const url = mainImage.formats?.large?.url || mainImage.url;
+          if (url) mainImageUrl = url;
         }
         // Category
         let category = null;
@@ -88,19 +82,21 @@ const fetchEvents = async () => {
           };
         }
         // Images
+        // New API: images is an array of objects or null
         let images: string[] = [];
-        if (attrs.images?.data) {
-          images = attrs.images.data.map((img: any) => {
-            const imgAttrs = img.attributes || img;
-            return imgAttrs.url.startsWith("http")
-              ? imgAttrs.url
-              : `https://nyx-club-back.onrender.com${imgAttrs.url}`;
-          });
+        if (Array.isArray(attrs.images)) {
+          images = attrs.images
+            .map((img: any) => {
+              // Prefer large, fallback to url
+              const url = img.formats?.large?.url || img.url;
+              return url || null;
+            })
+            .filter(Boolean);
         }
         // Date
         const date = attrs.date ? new Date(attrs.date) : new Date();
         return {
-          id: item.id,
+          id: item.id, // Always use the Strapi event id
           title: attrs.title || "",
           description: attrs.description || "",
           date,
@@ -406,21 +402,21 @@ const EventCard = ({
 // Helper function to render rich text content
 const renderRichText = (content: any) => {
   if (!content) return null;
-  
-  if (typeof content === 'string') {
+
+  if (typeof content === "string") {
     return <p className="mb-4">{content}</p>;
   }
-  
+
   if (Array.isArray(content)) {
     return content.map((item, index) => (
       <div key={index} className="mb-4">
         {item.children?.map((child: any, i: number) => {
-          if (child.type === 'text') {
-            let className = '';
-            if (child.bold) className += ' font-bold';
-            if (child.italic) className += ' italic';
-            if (child.underline) className += ' underline';
-            
+          if (child.type === "text") {
+            let className = "";
+            if (child.bold) className += " font-bold";
+            if (child.italic) className += " italic";
+            if (child.underline) className += " underline";
+
             return (
               <span key={i} className={className}>
                 {child.text}
@@ -432,55 +428,64 @@ const renderRichText = (content: any) => {
       </div>
     ));
   }
-  
+
   return null;
 };
 
 // Image Gallery Component
-const ImageGallery = ({ images, title }: { images: string[]; title: string }) => {
+const ImageGallery = ({
+  images,
+  title,
+}: {
+  images: string[];
+  title: string;
+}) => {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const openImage = (index: number) => {
     setSelectedImage(index);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
   };
 
   const closeImage = () => {
     setSelectedImage(null);
-    document.body.style.overflow = 'unset';
+    document.body.style.overflow = "unset";
   };
 
-  const navigate = (direction: 'prev' | 'next') => {
+  const navigate = (direction: "prev" | "next") => {
     if (selectedImage === null) return;
-    
-    if (direction === 'prev') {
-      setSelectedImage(prev => (prev === 0 ? images.length - 1 : prev! - 1));
+
+    if (direction === "prev") {
+      setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev! - 1));
     } else {
-      setSelectedImage(prev => (prev === images.length - 1 ? 0 : prev! + 1));
+      setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev! + 1));
     }
   };
 
   // Close modal when clicking outside the image
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      if (
+        modalRef.current &&
+        !modalRef.current.contains(event.target as Node)
+      ) {
         closeImage();
       }
     };
 
     if (selectedImage !== null) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeImage();
-        if (e.key === 'ArrowLeft') navigate('prev');
-        if (e.key === 'ArrowRight') navigate('next');
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeImage();
+        if (e.key === "ArrowLeft") navigate("prev");
+        if (e.key === "ArrowRight") navigate("next");
       });
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', () => {});
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", () => {});
     };
   }, [selectedImage]);
 
@@ -491,8 +496,8 @@ const ImageGallery = ({ images, title }: { images: string[]; title: string }) =>
       <h3 className="text-xl font-semibold mb-4">{title}</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {images.map((image, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="group relative aspect-square overflow-hidden rounded-lg bg-gray-800 cursor-zoom-in"
             onClick={() => openImage(index)}
           >
@@ -512,23 +517,26 @@ const ImageGallery = ({ images, title }: { images: string[]; title: string }) =>
       {/* Lightbox Modal */}
       {selectedImage !== null && (
         <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
-          <button 
+          <button
             onClick={closeImage}
             className="absolute top-4 right-4 text-white hover:text-[#B20118] transition-colors p-2"
             aria-label="Cerrar"
           >
             <CloseIcon className="w-8 h-8" />
           </button>
-          
-          <div className="relative w-full max-w-5xl h-full flex items-center" ref={modalRef}>
-            <button 
-              onClick={() => navigate('prev')}
+
+          <div
+            className="relative w-full max-w-5xl h-full flex items-center"
+            ref={modalRef}
+          >
+            <button
+              onClick={() => navigate("prev")}
               className="absolute left-4 p-2 text-white hover:text-[#B20118] transition-colors z-10"
               aria-label="Imagen anterior"
             >
               <LeftIcon className="w-8 h-8" />
             </button>
-            
+
             <div className="w-full h-full flex items-center justify-center">
               <img
                 src={images[selectedImage]}
@@ -536,15 +544,15 @@ const ImageGallery = ({ images, title }: { images: string[]; title: string }) =>
                 className="max-h-[90vh] max-w-full object-contain"
               />
             </div>
-            
-            <button 
-              onClick={() => navigate('next')}
+
+            <button
+              onClick={() => navigate("next")}
               className="absolute right-4 p-2 text-white hover:text-[#B20118] transition-colors z-10"
               aria-label="Siguiente imagen"
             >
               <RightIcon className="w-8 h-8" />
             </button>
-            
+
             <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm">
               {selectedImage + 1} / {images.length}
             </div>
@@ -577,11 +585,14 @@ const EventModal = ({
   }
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
       onClick={onClose}
     >
-      <div className="bg-black border border-[#B20118]/30 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-black border border-[#B20118]/30 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close button */}
         <button
           onClick={onClose}
@@ -590,15 +601,17 @@ const EventModal = ({
         >
           <X className="w-6 h-6" />
         </button>
-        
+
         {/* Event header with title and category */}
         <div className="sticky top-0 bg-black/90 backdrop-blur-sm z-10 p-4 border-b border-gray-800 pr-16">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-white pr-4">{event.title}</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-white pr-4">
+              {event.title}
+            </h2>
             {event.category && (
               <span
-                className={`${event.category.bgColor || 'bg-gray-800'} ${
-                  event.category.textColor || 'text-white'
+                className={`${event.category.bgColor || "bg-gray-800"} ${
+                  event.category.textColor || "text-white"
                 } text-sm px-4 py-2 rounded-full flex items-center w-fit shrink-0`}
               >
                 <IconComponent className="w-4 h-4 mr-2" />
@@ -610,6 +623,21 @@ const EventModal = ({
         {/* Main content */}
         <div className="p-6">
           {/* Event metadata */}
+          {event.mainImage && (
+            <div className="mb-6 rounded-lg overflow-hidden group relative">
+              <img
+                src={event.mainImage}
+                alt={event.title}
+                className="w-full h-auto max-h-[70vh] object-contain mx-auto bg-black"
+                style={{ maxWidth: "100%", height: "auto" }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/images/placeholder-event.jpg"; // Fallback image
+                }}
+                loading="lazy"
+              />
+            </div>
+          )}
           <div className="space-y-3 mb-6 text-gray-300">
             <div className="flex items-center">
               <CalendarIcon className="w-5 h-5 mr-3 text-[#B20118]" />
@@ -621,11 +649,11 @@ const EventModal = ({
             </div>
             <div className="flex items-center">
               <Clock className="w-5 h-5 mr-3 text-[#B20118]" />
-              <span>{event.time || 'Hora por confirmar'}</span>
+              <span>{event.time || "Hora por confirmar"}</span>
             </div>
             <div className="flex items-start">
               <MapPin className="w-5 h-5 mr-3 mt-0.5 text-[#B20118] flex-shrink-0" />
-              <span>{event.location || 'Ubicación por confirmar'}</span>
+              <span>{event.location || "Ubicación por confirmar"}</span>
             </div>
             {event.capacity && (
               <div className="flex items-center">
@@ -634,64 +662,51 @@ const EventModal = ({
               </div>
             )}
           </div>
-          
-          {/* Main image and gallery */}
-          <div className="space-y-6">
-            {event.mainImage && (
-              <div className="mb-6 rounded-lg overflow-hidden group relative">
-                <img
-                  src={event.mainImage}
-                  alt={event.title}
-                  className="w-full h-auto max-h-[70vh] object-contain mx-auto bg-black"
-                  style={{ maxWidth: '100%', height: 'auto' }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = '/images/placeholder-event.jpg'; // Fallback image
-                  }}
-                  loading="lazy"
-                />
-              </div>
-            )}
-            
-            {/* Additional images */}
-            {event.images && event.images.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {event.images.filter(img => img).map((image, index) => (
-                  <div key={index} className="aspect-square overflow-hidden rounded-lg bg-gray-900">
-                    <img
-                      src={image}
-                      alt={`${event.title} - Imagen ${index + 1}`}
-                      className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/images/placeholder-event.jpg'; // Fallback image
-                      }}
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
+
           {/* Event description */}
           {event.description && (
             <div className="prose prose-invert max-w-none mb-8">
-              <h3 className="text-xl font-semibold mb-4">Descripción del evento</h3>
+              <h3 className="text-xl font-semibold mb-4">
+                Descripción del evento
+              </h3>
               <div className="space-y-4 text-gray-300">
                 {renderRichText(event.description)}
               </div>
             </div>
           )}
-          
-
-          
+{/* Main image and gallery */}
+<div className="space-y-6">
+            {/* Additional images */}
+            {event.images && event.images.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {event.images
+                  .filter((img) => img)
+                  .map((image, index) => (
+                    <div
+                      key={index}
+                      className="aspect-square overflow-hidden rounded-lg bg-gray-900"
+                    >
+                      <img
+                        src={image}
+                        alt={`${event.title} - Imagen ${index + 1}`}
+                        className="w-full h-full object-cover hover:opacity-90 transition-opacity"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/images/placeholder-event.jpg"; // Fallback image
+                        }}
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
           {/* Tags */}
           {event.tags && event.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-8">
               {event.tags.map((tag) => (
-                <span 
-                  key={tag} 
+                <span
+                  key={tag}
                   className="px-3 py-1 text-sm rounded-full bg-gray-800 text-gray-300"
                 >
                   {tag}
@@ -699,7 +714,7 @@ const EventModal = ({
               ))}
             </div>
           )}
-          
+
           {/* Action button */}
           {event.link && (
             <div className="pt-6 mt-6 border-t border-gray-800">
@@ -708,7 +723,7 @@ const EventModal = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center w-full px-6 py-3 bg-[#B20118] text-white rounded-lg hover:bg-[#8B0112] transition-colors font-medium text-center"
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 Reservar plaza
               </a>
