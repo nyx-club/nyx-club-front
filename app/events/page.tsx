@@ -23,68 +23,201 @@ import {
   Clock,
   MapPin,
   Users,
-  BookOpen,
-  Ribbon,
-  Filter,
+  Circle,
   X,
-  Film as FilmIcon,
+  LucideIcon,
 } from "lucide-react";
-import { eventCategories } from "@/data/events";
-import { Event, EventCategory, EventCategoryData } from "@/types/event";
+import * as LucideIcons from "lucide-react";
+import { Event } from "@/types/event";
+import EventFilters from "@/components/events/EventFilters";
+
+// Helper to check if a value is a valid Lucide icon
+function isLucideComponent(value: any): value is LucideIcon {
+  return typeof value === 'function' && 
+    value.displayName && 
+    value.displayName.startsWith('Lucide');
+}
 
 // Fetch events from Strapi
 const fetchEvents = async () => {
-  const res = await fetch(
-    "https://nyx-club-back.onrender.com/api/events?populate=*"
-  );
-  const { data } = await res.json();
-  return data.map((item: any) => {
-    // Prefer large format, fallback to main url
-    let mainImageUrl = null;
-    if (item.mainImage) {
-      if (
-        item.mainImage.formats &&
-        item.mainImage.formats.large &&
-        item.mainImage.formats.large.url
-      ) {
-        mainImageUrl = item.mainImage.formats.large.url.startsWith("http")
-          ? item.mainImage.formats.large.url
-          : `https://nyx-club-back.onrender.com${item.mainImage.formats.large.url}`;
-      } else if (item.mainImage.url) {
-        mainImageUrl = item.mainImage.url.startsWith("http")
-          ? item.mainImage.url
-          : `https://nyx-club-back.onrender.com${item.mainImage.url}`;
+  try {
+    const res = await fetch(
+      "https://nyx-club-back.onrender.com/api/events?populate=*"
+    );
+    if (!res.ok) throw new Error('Failed to fetch events');
+    const { data } = await res.json();
+    
+    return data.map((item: any) => {
+      // Support both Strapi v4 (attributes) and v3 (flat)
+      const attrs = item.attributes || item;
+      // Prefer large format, fallback to main url
+      let mainImageUrl = null;
+      if (attrs.mainImage?.data) {
+        const mainImage = attrs.mainImage.data;
+        if (mainImage.attributes?.formats?.large?.url) {
+          mainImageUrl = mainImage.attributes.formats.large.url.startsWith("http")
+            ? mainImage.attributes.formats.large.url
+            : `https://nyx-club-back.onrender.com${mainImage.attributes.formats.large.url}`;
+        } else if (mainImage.attributes?.url) {
+          mainImageUrl = mainImage.attributes.url.startsWith("http")
+            ? mainImage.attributes.url
+            : `https://nyx-club-back.onrender.com${mainImage.attributes.url}`;
+        }
       }
-    }
-    return {
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      date: new Date(item.date),
-      time: item.time,
-      location: item.location || "NYX BDSM Club - Calle Amaniel 13",
-      category: item.category,
-      capacity: item.capacity,
-      mainImage: mainImageUrl,
-      images: item.images
-        ? item.images.map((img: any) =>
-            img.url.startsWith("http")
-              ? img.url
-              : `https://nyx-club-back.onrender.com${img.url}`
-          )
-        : [],
-      tags: item.tags || [],
-      slug: item.slug,
-      link: item.link,
-    };
-  });
+      // Category
+      let category = null;
+      if (attrs.category?.data) {
+        const cat = attrs.category.data;
+        const catAttrs = cat.attributes || cat;
+        category = {
+          id: cat.id,
+          name: catAttrs.name,
+          slug: catAttrs.slug,
+          icon: catAttrs.icon,
+          bgColor: catAttrs.bgColor || 'bg-gray-500/20',
+          textColor: catAttrs.textColor || 'text-gray-300',
+        };
+      }
+      // Images
+      let images: string[] = [];
+      if (attrs.images?.data) {
+        images = attrs.images.data.map((img: any) => {
+          const imgAttrs = img.attributes || img;
+          return imgAttrs.url.startsWith("http")
+            ? imgAttrs.url
+            : `https://nyx-club-back.onrender.com${imgAttrs.url}`;
+        });
+      }
+      // Date
+      const date = attrs.date ? new Date(attrs.date) : new Date();
+      return {
+        id: item.id,
+        title: attrs.title || '',
+        description: attrs.description || '',
+        date,
+        time: attrs.time || '',
+        location: attrs.location || "NYX BDSM Club - Calle Amaniel 13",
+        category,
+        capacity: attrs.capacity || null,
+        mainImage: mainImageUrl,
+        images,
+        tags: attrs.tags || [],
+        slug: attrs.slug || '',
+        link: attrs.link || null,
+      };
+    }).filter(Boolean);
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    return [];
+  }
 };
 
-// Types
-type ViewMode = "all" | "upcoming" | "past";
+export default function EventsPage() {
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'all' | 'upcoming' | 'past'>("upcoming");
 
-// Use eventCategories directly for consistent icons
-const EVENT_CATEGORIES = eventCategories;
+  useEffect(() => {
+    fetchEvents().then((fetchedEvents) => {
+      if (Array.isArray(fetchedEvents)) {
+        setEvents(fetchedEvents);
+      } else {
+        console.error('Fetched events is not an array:', fetchedEvents);
+        setEvents([]);
+      }
+    });
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    if (!Array.isArray(events)) return [];
+    
+    let filtered = [...events];
+
+    // Apply category filters
+    if (activeFilters.length > 0) {
+      filtered = filtered.filter(
+        (event) => event.category && activeFilters.includes(event.category.slug)
+      );
+    }
+
+    // Apply time-based filtering
+    const now = new Date();
+    switch (viewMode) {
+      case "upcoming":
+        filtered = filtered.filter((event) => event.date && isAfter(event.date, now));
+        break;
+      case "past":
+        filtered = filtered.filter((event) => event.date && isBefore(event.date, now));
+        break;
+    }
+
+    // Apply date filter
+    if (selectedDate) {
+      filtered = filtered.filter((event) => 
+        event.date && isSameDay(event.date, selectedDate)
+      );
+    }
+
+    return filtered;
+  }, [events, activeFilters, viewMode, selectedDate]);
+
+  const handleEventClick = useCallback((event: Event) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+  }, []);
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl font-bold mb-8">Eventos</h1>
+      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
+        <div className="space-y-6">
+          <Calendar
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+            events={events}
+          />
+          <EventFilters
+            activeFilters={activeFilters}
+            viewMode={viewMode}
+            onFilterChange={setActiveFilters}
+            onViewModeChange={setViewMode}
+          />
+        </div>
+        <div className="space-y-4">
+          {filteredEvents.length > 0 ? (
+            filteredEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                onClick={() => handleEventClick(event)}
+              />
+            ))
+          ) : (
+            <p className="text-gray-500 text-center py-8">
+              No hay eventos que coincidan con los filtros seleccionados.
+            </p>
+          )}
+        </div>
+      </div>
+      {selectedEvent && (
+        <EventModal
+          event={selectedEvent}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedEvent(null);
+          }}
+          isOpen={isModalOpen}
+        />
+      )}
+    </div>
+  );
+}
 
 // Calendar component
 const Calendar = ({
@@ -122,7 +255,7 @@ const Calendar = ({
   };
 
   const hasEventOnDay = (date: Date) => {
-    return events.some((event) => isSameDay(event.date, date));
+    return events.some((event) => event.date && isSameDay(event.date, date));
   };
 
   return (
@@ -130,7 +263,7 @@ const Calendar = ({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={handlePrevMonth}
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="p-2 rounded-full hover:bg-[#B20118]/10 transition-colors"
           aria-label="Mes anterior"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -140,7 +273,7 @@ const Calendar = ({
         </h3>
         <button
           onClick={handleNextMonth}
-          className="p-2 rounded-full hover:bg-gray-100"
+          className="p-2 rounded-full hover:bg-[#B20118]/10 transition-colors"
           aria-label="Siguiente mes"
         >
           <ChevronRight className="w-5 h-5" />
@@ -169,7 +302,7 @@ const Calendar = ({
               key={index}
               onClick={() => onDateSelect(day)}
               className={`
-                h-10 rounded-full flex items-center justify-center
+                h-10 rounded-full flex items-center justify-center text-sm
                 ${isToday(day) ? "font-bold" : ""}
                 ${
                   isSelected
@@ -205,8 +338,13 @@ const EventCard = ({
   event: Event;
   onClick: () => void;
 }) => {
-  const category = EVENT_CATEGORIES[event.category];
-  const Icon = category.icon;
+  let IconComponent = Circle;
+  if (event.category?.icon) {
+    const DynamicIcon = LucideIcons[event.category.icon as keyof typeof LucideIcons];
+    if (isLucideComponent(DynamicIcon)) {
+      IconComponent = DynamicIcon;
+    }
+  }
 
   return (
     <div
@@ -215,44 +353,33 @@ const EventCard = ({
     >
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-lg font-semibold">{event.title}</h3>
-        <span
-          className={`${category.bgColor} ${category.textColor} text-xs px-2 py-1 rounded-full`}
-        >
-          {category.name}
-        </span>
+        {event.category && (
+          <span className={`${event.category.bgColor} ${event.category.textColor} text-xs px-2 py-1 rounded-full flex items-center gap-1`}>
+            <IconComponent className="w-4 h-4 mr-1" />
+            {event.category.name}
+          </span>
+        )}
       </div>
-      <div className="flex items-center text-sm text-gray-600 mb-2">
+      <div className="flex items-center text-sm text-gray-400 mb-2">
         <CalendarIcon className="w-4 h-4 mr-1" />
         <span>{format(event.date, "EEEE d MMMM yyyy", { locale: es })}</span>
       </div>
-      <div className="flex items-center text-sm text-gray-600 mb-2">
+      <div className="flex items-center text-sm text-gray-400 mb-2">
         <Clock className="w-4 h-4 mr-1" />
         <span>{event.time}</span>
       </div>
-      <div className="flex items-center text-sm text-gray-300 mb-3">
+      <div className="flex items-center text-sm text-gray-400 mb-3">
         <MapPin className="w-4 h-4 mr-1" />
         <span>{event.location}</span>
       </div>
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-400">{event.capacity}</div>
-        {event.tags && event.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {event.tags.slice(0, 2).map((tag, i) => (
-              <span
-                key={i}
-                className="text-xs px-2 py-0.5 bg-gray-800 text-gray-200 rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
-            {event.tags.length > 2 && (
-              <span className="text-xs text-gray-400">
-                +{event.tags.length - 2}
-              </span>
-            )}
+      {event.capacity && (
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-400">
+            <Users className="w-4 h-4 inline mr-1" />
+            {event.capacity}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -269,8 +396,13 @@ const EventModal = ({
 }) => {
   if (!isOpen || !event) return null;
 
-  const category = EVENT_CATEGORIES[event.category];
-  const Icon = category.icon;
+  let IconComponent = Circle;
+  if (event.category?.icon) {
+    const DynamicIcon = LucideIcons[event.category.icon as keyof typeof LucideIcons];
+    if (isLucideComponent(DynamicIcon)) {
+      IconComponent = DynamicIcon;
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
@@ -286,452 +418,81 @@ const EventModal = ({
               <X className="w-6 h-6" />
             </button>
           </div>
-
+          {event.category && (
+            <div className="mb-4">
+              <span className={`${event.category.bgColor} ${event.category.textColor} text-sm px-3 py-1 rounded-full flex items-center w-fit`}>
+                <IconComponent className="w-4 h-4 mr-2" />
+                {event.category.name}
+              </span>
+            </div>
+          )}
+          <div className="space-y-2 mb-4 text-gray-300">
+            <div className="flex items-center">
+              <CalendarIcon className="w-5 h-5 mr-2" />
+              <span>
+                {event.date ? format(event.date, "EEEE d MMMM yyyy", { locale: es }) : ''}
+              </span>
+            </div>
+            <div className="flex items-center">
+              <Clock className="w-5 h-5 mr-2" />
+              <span>{event.time}</span>
+            </div>
+            <div className="flex items-center">
+              <MapPin className="w-5 h-5 mr-2" />
+              <span>{event.location}</span>
+            </div>
+            {event.capacity && (
+              <div className="flex items-center">
+                <Users className="w-5 h-5 mr-2" />
+                <span>{event.capacity}</span>
+              </div>
+            )}
+          </div>
+          {/* Event description */}
+          {event.description && (
+            <div className="prose prose-invert max-w-none mb-6">
+              {typeof event.description === 'string' ? event.description : null}
+            </div>
+          )}
+          {/* Event images */}
           {event.mainImage && (
-            <div className="mb-6 rounded-lg overflow-hidden">
+            <div className="mb-6">
               <img
                 src={event.mainImage}
                 alt={event.title}
-                className="w-full h-48 object-cover"
+                className="w-full h-auto rounded-lg"
               />
             </div>
           )}
-
-          {/* Show images gallery if present */}
           {event.images && event.images.length > 0 && (
-            <div className="mb-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-              {event.images.map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img}
-                  alt={event.title + " image " + (idx + 1)}
-                  className="w-full h-40 object-cover rounded-lg border border-[#B20118]/20"
-                />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+              {event.images.map((image, index) => (
+                image ? (
+                  <img
+                    key={index}
+                    src={image}
+                    alt={`${event.title} - Imagen ${index + 1}`}
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                ) : null
               ))}
             </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <h3 className="text-lg font-semibold mb-2">Descripción</h3>
-              <div className="text-gray-400 mb-6">
-                {Array.isArray(event.description) ? (
-                  event.description.map((block, i) => (
-                    <p key={i} className="mb-2">
-                      {block.children.map((child) => child.text).join("")}
-                    </p>
-                  ))
-                ) : (
-                  <p>{event.description}</p>
-                )}
-              </div>
-
-              <h3 className="text-lg font-semibold mb-2">
-                Detalles del evento
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800">
-                      <Icon className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
-                      Categoría
-                    </p>
-                    <p className="text-sm">{category.name}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800">
-                      <CalendarIcon className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
-                      Fecha y hora
-                    </p>
-                    <p className="text-sm">
-                      {format(event.date, "EEEE d MMMM yyyy", { locale: es })}
-                      <br />
-                      {event.time}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800">
-                      <MapPin className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
-                      Ubicación
-                    </p>
-                    <p className="text-sm">{event.location}</p>
-                    {event.tags && event.tags.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm font-medium text-gray-500">
-                          Etiquetas
-                        </p>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {event.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 text-xs rounded-full bg-gray-800 text-gray-300"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Capacidad section only if event.capacity is present */}
-                {event.capacity && (
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-800">
-                        <Users className="w-5 h-5 text-gray-400" />
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-500">
-                        Capacidad
-                      </p>
-                      <p className="text-sm">{event.capacity}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Más información button, only if event.link is present */}
-            {event.link ? (
-              <div className="md:border-l md:pl-6">
-                <div className="bg-[#0a0a0a] border border-[#B20118]/20 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-4">Más información</h3>
-                  <div className="text-green-500 font-medium mb-4">
-                    {event.capacity}
-                  </div>
-
-                  <a
-                    href={event.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full block bg-[#B20118] text-white py-2 px-4 rounded-md hover:bg-[#8B0112] transition-colors text-center"
-                  >
-                    Fetlife
-                  </a>
-
-                  <p className="text-sm text-gray-400 mt-4 text-center">
-                    Para más detalles o reservas, contáctanos directamente.
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// EventFilters component
-const EventFilters = ({
-  activeFilters,
-  onFilterChange,
-  viewMode,
-  onViewModeChange,
-}: {
-  activeFilters: EventCategory[];
-  onFilterChange: (filters: EventCategory[]) => void;
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
-}) => {
-  const toggleFilter = (category: EventCategory) => {
-    if (activeFilters.includes(category)) {
-      onFilterChange(activeFilters.filter((c) => c !== category));
-    } else {
-      onFilterChange([...activeFilters, category]);
-    }
-  };
-
-  return (
-    <div className="bg-[#B20118]/10 rounded-lg shadow p-4 mb-6">
-      <div className="mb-4">
-        <h3 className="font-semibold mb-2 text-white">Ver</h3>
-        <div className="flex flex-wrap gap-2">
-          {(["all", "upcoming", "past"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => onViewModeChange(mode)}
-              className={`px-3 py-1 text-sm rounded-full ${
-                viewMode === mode
-                  ? "bg-[#B20118] text-white"
-                  : "bg-[#B20118]/20 text-white hover:bg-[#B20118]/30"
-              }`}
-            >
-              {mode === "all" && "Todos"}
-              {mode === "upcoming" && "Próximos"}
-              {mode === "past" && "Pasados"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-semibold mb-2 text-white">Filtrar por categoría</h3>
-        <div className="flex flex-wrap gap-2">
-          {(
-            Object.entries(EVENT_CATEGORIES) as [
-              EventCategory,
-              EventCategoryData & { icon: any }
-            ][]
-          ).map(([key, cat]) => {
-            const isActive = activeFilters.includes(key);
-            return (
-              <button
-                key={key}
-                onClick={() => toggleFilter(key)}
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                  isActive
-                    ? "bg-[#B20118] text-white border border-[#B20118]"
-                    : "bg-[#B20118]/10 text-white hover:bg-[#B20118]/20 border border-[#B20118]/20"
-                }`}
+          {/* Event link */}
+          {event.link && (
+            <div className="mt-6">
+              <a
+                href={event.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-[#B20118] text-white rounded-lg hover:bg-[#B20118]/80 transition-colors"
               >
-                <cat.icon className="w-4 h-4 mr-1" />
-                {cat.name}
-              </button>
-            );
-          })}
+                Más información
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
-
-// Main EventsPage component
-export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<EventCategory[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>("upcoming");
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch events from Strapi
-  useEffect(() => {
-    fetchEvents()
-      .then(setEvents)
-      .catch(() => setError("No se pudieron cargar los eventos."))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Filter events based on selected date and filters
-  useEffect(() => {
-    let result =
-      viewMode === "upcoming"
-        ? [...events.filter((event) => isAfter(event.date, new Date()))]
-        : viewMode === "past"
-        ? [...events.filter((event) => isBefore(event.date, new Date()))]
-        : [...events];
-
-    // Apply category filters
-    if (activeFilters.length > 0) {
-      result = result.filter((event) => activeFilters.includes(event.category));
-    }
-
-    // Apply date filter if a date is selected
-    if (selectedDate) {
-      result = result.filter((event) => isSameDay(event.date, selectedDate));
-    }
-
-    setFilteredEvents(result);
-  }, [events, activeFilters, viewMode, selectedDate]);
-
-  // Group events by date
-  const eventsByDate = useMemo(() => {
-    const groups: Record<string, Event[]> = {};
-
-    filteredEvents.forEach((event) => {
-      const dateKey = format(event.date, "yyyy-MM-dd");
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
-      }
-      groups[dateKey].push(event);
-    });
-
-    return groups;
-  }, [filteredEvents]);
-
-  const handleDateSelect = useCallback((date: Date) => {
-    setSelectedDate((prev) => (prev && isSameDay(prev, date) ? null : date));
-  }, []);
-
-  const handleEventClick = useCallback((event: Event) => {
-    setSelectedEvent(event);
-    setIsModalOpen(true);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false);
-  }, []);
-
-  const handleFilterChange = useCallback((filters: EventCategory[]) => {
-    setActiveFilters(filters);
-  }, []);
-
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode);
-    // Clear selected date when changing view mode for better UX
-    setSelectedDate(null);
-  }, []);
-
-  // Reset selected date when it has no events
-  useEffect(() => {
-    if (
-      selectedDate &&
-      !filteredEvents.some((e) => isSameDay(e.date, selectedDate))
-    ) {
-      setSelectedDate(null);
-    }
-  }, [filteredEvents, selectedDate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Cargando eventos...</h2>
-          <p className="text-gray-400">Por favor, espera un momento.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Error al cargar eventos</h2>
-          <p className="text-gray-400">{error}</p>
-          <button
-            onClick={() => {
-              setLoading(true);
-              setError(null);
-              fetchEvents()
-                .then(setEvents)
-                .catch(() => setError("No se pudieron cargar los eventos."))
-                .finally(() => setLoading(false));
-            }}
-            className="mt-4 px-4 py-2 bg-[#B20118] text-white rounded-md hover:bg-[#8B0112] transition-colors"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-white mb-8">Eventos</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left sidebar */}
-          <div className="lg:col-span-1">
-            <EventFilters
-              activeFilters={activeFilters}
-              onFilterChange={handleFilterChange}
-              viewMode={viewMode}
-              onViewModeChange={handleViewModeChange}
-            />
-
-            <Calendar
-              currentMonth={currentMonth}
-              onMonthChange={setCurrentMonth}
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-              events={filteredEvents}
-            />
-          </div>
-
-          {/* Main content */}
-          <div className="lg:col-span-3">
-            {selectedDate && (
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">
-                  Eventos para{" "}
-                  {format(selectedDate, "EEEE d MMMM yyyy", { locale: es })}
-                </h2>
-                <button
-                  onClick={() => setSelectedDate(null)}
-                  className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Limpiar fecha
-                </button>
-              </div>
-            )}
-
-            {Object.keys(eventsByDate).length > 0 ? (
-              <div className="space-y-6">
-                {Object.entries(eventsByDate).map(([date, events]) => (
-                  <div key={date}>
-                    {!selectedDate && (
-                      <h3 className="text-lg font-semibold mb-4">
-                        {format(new Date(date), "EEEE d MMMM yyyy", {
-                          locale: es,
-                        })}
-                      </h3>
-                    )}
-                    <div className="space-y-4">
-                      {events.map((event) => (
-                        <EventCard
-                          key={event.id}
-                          event={event}
-                          onClick={() => handleEventClick(event)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg shadow p-8 text-center">
-                <div className="mx-auto w-16 h-16 bg-[#B20118]/10 rounded-full flex items-center justify-center mb-4">
-                  <CalendarIcon className="w-8 h-8 text-[#B20118]" />
-                </div>
-                <h3 className="text-lg font-medium text-white mb-1">
-                  No hay eventos programados
-                </h3>
-                <p className="text-gray-400">
-                  {activeFilters.length > 0 || selectedDate
-                    ? "Prueba a ajustar los filtros o selecciona otra fecha."
-                    : "¡Vuelve pronto para ver los próximos eventos!"}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      <EventModal
-        event={selectedEvent}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
-    </div>
-  );
-}
