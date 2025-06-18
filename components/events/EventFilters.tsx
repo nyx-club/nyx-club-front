@@ -108,7 +108,7 @@ export default function EventFilters({
           </Tabs>
         </div>
 
-        {/* Category Filter Dropdown */}
+        {/* Category Filter Dropdown (hidden)
         <div className="w-full">
           <h3 className="text-sm font-medium text-white/80 mb-2">Filtrar por categoría</h3>
           <DropdownMenu>
@@ -223,6 +223,7 @@ export default function EventFilters({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        */}
       </div>
     </section>
   );
