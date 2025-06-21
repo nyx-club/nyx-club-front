@@ -11,11 +11,15 @@ export default function HomePage() {
           {/* Main NYX Symbol - Increased Size */}
           <div className="mb-12">
             <div className="relative w-80 h-80 md:w-96 md:h-96 lg:w-[500px] lg:h-[500px] xl:w-[600px] xl:h-[600px] mx-auto mb-8">
+              {/* Red shade under the logo */}
+              <div className="absolute inset-0 z-0 flex items-center justify-center">
+                <div className="w-full h-full rounded-full bg-[#B20118]/30 blur-2xl"></div>
+              </div>
               <Image
-                src="/images/nyx-logo.jpg"
+                src="/images/imagotipo_NYX_color.png"
                 alt="Símbolo del Nyx Club"
                 fill
-                className="object-contain"
+                className="object-contain z-10 relative"
                 priority
               />
             </div>
