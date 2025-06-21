@@ -58,11 +58,11 @@ export default function HomePage() {
                     />
                   </div>
                   <span className="text-2xl font-semibold text-gray-200 group-hover:text-[#B20118] transition-colors">
-                    Eventos
+                    Calendario
                   </span>
                 </div>
                 <div className="mt-2 text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
-                  Descubre nuestros talleres y reuniones
+                  Descubre nuestras fiestas y talleres
                 </div>
               </div>
             </Link>

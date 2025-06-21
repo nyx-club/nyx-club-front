@@ -17,7 +17,7 @@ export default function Header({ currentPage = 'home' }: { currentPage?: 'home' 
             href="/events" 
             className={`transition-colors ${currentPage === 'events' ? 'text-[#B20118]' : 'text-gray-300 hover:text-[#B20118]'}`}
           >
-            Eventos
+            Calendario
           </Link>
           <Link 
             href="/contact" 
