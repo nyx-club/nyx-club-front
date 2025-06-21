@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 export default function ContactPage() {
   const [contact, setContact] = useState<any>(null);
   const [copied, setCopied] = useState(false);
-  const mapUrl = "https://maps.app.goo.gl/TeATQKBzVZdB6e7c9";
+  const mapUrl = "https://maps.app.goo.gl/oP7T5a6UUCnnvdPZ7";
 
   useEffect(() => {
     fetch("https://nyx-club-back.onrender.com/api/contact-infos?populate=*")
