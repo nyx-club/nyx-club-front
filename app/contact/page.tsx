@@ -1,18 +1,36 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Clock, Instagram, Heart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 
-export default async function ContactPage() {
-  const res = await fetch(
-    "https://nyx-club-back.onrender.com/api/contact-infos?populate=*",
-    { cache: "no-store" }
-  );
-  const { data } = await res.json();
-  const contact = data[0];
+export default function ContactPage() {
+  const [contact, setContact] = useState<any>(null);
+  const [copied, setCopied] = useState(false);
+  const mapUrl = "https://maps.app.goo.gl/oP7T5a6UUCnnvdPZ7";
 
-  // Strapi v4+ returns flat fields, not under 'attributes'
+  useEffect(() => {
+    fetch("https://nyx-club-back.onrender.com/api/contact-infos?populate=*")
+      .then((res) => res.json())
+      .then(({ data }) => setContact(data[0]))
+      .catch(() => setContact(undefined));
+  }, []);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(mapUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  if (!contact) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-400 text-xl">
+        Cargando información de contacto...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -56,6 +74,17 @@ export default async function ContactPage() {
                           {contact.address.city}, {contact.address.country}{" "}
                           {contact.address.postalCode}
                         </p>
+                        {/* Google Maps Link Box */}
+                        <div className="mt-4 p-3 bg-[#B20118]/10 border border-[#B20118]/30 rounded-lg flex items-center space-x-3">
+                          <Link
+                            href={mapUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#B20118] font-medium hover:underline"
+                          >
+                            Ver en Google Maps
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
