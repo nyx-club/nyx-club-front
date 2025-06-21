@@ -25,22 +25,22 @@ export default function HomePage() {
             </div>
 
             {/* Tagline in Spanish */}
-            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
+            <p className="text-lg md:text-xl text-gray-400 max-w-5xl mx-auto leading-relaxed mb-12">
               Del Caos surgió y NYX creó la noche y reinó sobre ella. Deidad
               poderosa y oscura que representa el espacio que quiere ser.
             </p>
-            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
+            <p className="text-lg md:text-xl text-gray-400 max-w-5xl mx-auto leading-relaxed mb-12">
               Un espacio inclusivo, amable con quienes lo respeten, e implacable
               para los que intenten hacer mal uso de lo que encarna.{" "}
             </p>
-            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
+            <p className="text-lg md:text-xl text-gray-400 max-w-5xl mx-auto leading-relaxed mb-12">
               Todo lo que imaginas e incluya una relación entre adultos capaces
               y sea SENSATO, SEGURO Y CONSENSUADO, está permitido. Todo está
               empezando, así que las propuestas, las ideas, las criticas
               constructivas o las destructivas, si aportan alternativas viables,
               serán escuchadas siempre que sumen para la comunidad.
             </p>
-            <p className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto leading-relaxed mb-12">
+            <p className="text-lg md:text-xl text-gray-400 max-w-5xl mx-auto leading-relaxed mb-12">
               Así que sólo resta decir BIENVENID@S A TOD@S!!!
             </p>
           </div>
