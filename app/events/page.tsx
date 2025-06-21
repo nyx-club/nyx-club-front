@@ -174,6 +174,11 @@ export default function EventsPage() {
       );
     }
 
+    // Sort by date descending (most recent first)
+    if (filtered.length > 1) {
+      filtered.sort((a, b) => (b.date as any) - (a.date as any));
+    }
+
     return filtered;
   }, [events, activeFilters, viewMode, selectedDate]);
 
