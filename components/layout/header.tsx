@@ -4,6 +4,9 @@ import Image from "next/image"
 export default function Header({ currentPage = 'home' }: { currentPage?: 'home' | 'events' | 'contact' }) {
   return (
     <header className="border-b border-[#B20118]/20 bg-black/95 backdrop-blur-sm sticky top-0 z-50">
+      <div className="w-full z-[200] bg-[#B20118] text-white text-center py-2 text-sm font-semibold shadow-md flex justify-center items-center">
+        El único sitio de la Asociación Club Privado La Pastelería
+      </div>
       <div className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           <div className="relative w-8 h-8">
