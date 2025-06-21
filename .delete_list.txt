@@ -1,0 +1,5 @@
+public/placeholder-logo.png
+public/placeholder-logo.svg
+public/placeholder-user.jpg
+public/placeholder.jpg
+public/placeholder.svg

@@ -1,9 +1,9 @@
 "use client";
 import { Button } from "@/components/ui/button";
+"use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Mail, Phone, Clock, Instagram, Heart } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 
 export default function ContactPage() {
