@@ -16,7 +16,7 @@ export default function HomePage() {
                 <div className="w-full h-full rounded-full bg-[#B20118]/30 blur-2xl"></div>
               </div>
               <Image
-                src="/images/imagotipo_NYX_color.png"
+                src="/images/imagotipo_NYX_color_INV.png"
                 alt="Símbolo del Nyx Club"
                 fill
                 className="object-contain z-10 relative"
