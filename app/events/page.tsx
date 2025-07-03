@@ -44,6 +44,50 @@ function isLucideComponent(value: any): value is LucideIcon {
   );
 }
 
+// Helper to expand recurrent events
+function expandRecurrentEvent(event: any) {
+  if (!event.recurrenceType || event.recurrenceType === "none")
+    return [
+      { ...event, occurrenceId: `${event.id}_${event.date instanceof Date ? event.date.toISOString() : event.date}` },
+    ];
+
+  const startDate = new Date(event.date);
+  const endDate = event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : null;
+  const occurrences = [];
+  let current = new Date(startDate);
+
+  if (event.recurrenceType === "weekly") {
+    // Always add the first occurrence
+    while (!endDate || current <= endDate) {
+      occurrences.push({
+        ...event,
+        date: new Date(current),
+        isRecurrent: true,
+        occurrenceId: `${event.id}_${current.toISOString()}`,
+      });
+      current.setDate(current.getDate() + 7); // Next week, same weekday
+      if (endDate && current > endDate) break;
+    }
+  } else if (event.recurrenceType === "monthly") {
+    while (!endDate || current <= endDate) {
+      occurrences.push({
+        ...event,
+        date: new Date(current),
+        isRecurrent: true,
+        occurrenceId: `${event.id}_${current.toISOString()}`,
+      });
+      current.setMonth(current.getMonth() + 1);
+      if (endDate && current > endDate) break;
+    }
+  } else {
+    occurrences.push({
+      ...event,
+      occurrenceId: `${event.id}_${event.date instanceof Date ? event.date.toISOString() : event.date}`,
+    });
+  }
+  return occurrences;
+}
+
 // Fetch events from Strapi
 const fetchEvents = async () => {
   try {
@@ -53,70 +97,86 @@ const fetchEvents = async () => {
     );
     if (!res.ok) throw new Error("Failed to fetch events");
     const { data } = await res.json();
-
-    return data
-      .map((item: any) => {
-        // Support both Strapi v4 (attributes) and v3 (flat)
-        const attrs = item.attributes || item;
-        // Prefer large format, fallback to main url
-        // Handle new API: mainImage is an object with formats and url
-        let mainImageUrl = null;
-        if (attrs.mainImage && typeof attrs.mainImage === "object") {
-          const mainImage = attrs.mainImage;
-          // Prefer large, fallback to url
-          const url = mainImage.formats?.large?.url || mainImage.url;
-          if (url) mainImageUrl = url;
-        }
-        // Category
-        let category = null;
-        if (attrs.category?.data) {
-          const cat = attrs.category.data;
-          const catAttrs = cat.attributes || cat;
-          category = {
-            id: cat.id,
-            name: catAttrs.name,
-            slug: catAttrs.slug,
-            icon: catAttrs.icon,
-            bgColor: catAttrs.bgColor || "bg-gray-500/20",
-            textColor: catAttrs.textColor || "text-gray-300",
-          };
-        }
-        // Images
-        // New API: images is an array of objects or null
-        let images: string[] = [];
-        if (Array.isArray(attrs.images)) {
-          images = attrs.images
-            .map((img: any) => {
-              // Prefer large, fallback to url
-              const url = img.formats?.large?.url || img.url;
-              return url || null;
-            })
-            .filter(Boolean);
-        }
-        // Date
-        const date = attrs.date ? new Date(attrs.date) : new Date();
-        return {
-          id: item.id, // Always use the Strapi event id
-          title: attrs.title || "",
-          description: attrs.description || "",
-          date,
-          time: attrs.time || "",
-          location: attrs.location || "NYX BDSM Club - Calle Amaniel 13",
-          category,
-          capacity: attrs.capacity || null,
-          mainImage: mainImageUrl,
-          images,
-          tags: attrs.tags || [],
-          slug: attrs.slug || "",
-          link: attrs.link || null,
+    let allEvents: any[] = [];
+    data.forEach((item: any) => {
+      const attrs = item.attributes || item;
+      // Prefer large format, fallback to main url
+      // Handle new API: mainImage is an object with formats and url
+      let mainImageUrl = null;
+      if (attrs.mainImage && typeof attrs.mainImage === "object") {
+        const mainImage = attrs.mainImage;
+        // Prefer large, fallback to url
+        const url = mainImage.formats?.large?.url || mainImage.url;
+        if (url) mainImageUrl = url;
+      }
+      // Category
+      let category = null;
+      if (attrs.category) {
+        category = {
+          id: attrs.category.id,
+          name: attrs.category.name,
+          slug: attrs.category.slug,
+          icon: attrs.category.icon,
+          bgColor: attrs.category.bgColor || "bg-gray-500/20",
+          textColor: attrs.category.textColor || "text-gray-300",
         };
-      })
-      .filter(Boolean);
+      }
+      // Images
+      // New API: images is an array of objects or null
+      let images: string[] = [];
+      if (Array.isArray(attrs.images)) {
+        images = attrs.images
+          .map((img: any) => {
+            // Prefer large, fallback to url
+            const url = img.formats?.large?.url || img.url;
+            return url || null;
+          })
+          .filter(Boolean);
+      }
+      // Date
+      // Always use the date part (YYYY-MM-DD) as local midnight for day-based logic
+      let date: Date;
+      if (attrs.date) {
+        // Extract only the date part (YYYY-MM-DD)
+        const dateStr = attrs.date.split('T')[0];
+        const [year, month, day] = dateStr.split('-').map(Number);
+        date = new Date(year, month - 1, day, 0, 0, 0, 0); // local midnight
+      } else {
+        const now = new Date();
+        date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      }
+      const event = {
+        id: item.id,
+        title: attrs.title || "",
+        description: attrs.description || "",
+        date,
+        time: attrs.time || "",
+        location: attrs.location || "NYX BDSM Club - Calle Amaniel 13",
+        category,
+        capacity: attrs.capacity || null,
+        mainImage: mainImageUrl,
+        images,
+        tags: attrs.tags || [],
+        slug: attrs.slug || "",
+        link: attrs.link || null,
+        recurrenceType: attrs.recurrenceType || "none",
+        recurrenceEndDate: attrs.recurrenceEndDate || null,
+      };
+      // Expand recurrent events
+      const expanded = expandRecurrentEvent(event);
+      allEvents = allEvents.concat(expanded);
+    });
+    return allEvents;
   } catch (error) {
     console.error("Error fetching events:", error);
     return [];
   }
 };
+
+// Helper: get a date at UTC midnight (for day-based logic)
+function getUTCMidnight(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
 
 export default function EventsPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -170,7 +230,7 @@ export default function EventsPage() {
     // Apply date filter
     if (selectedDate) {
       filtered = filtered.filter(
-        (event) => event.date && isSameDay(event.date, selectedDate)
+        (event) => event.date && getUTCMidnight(event.date).getTime() === getUTCMidnight(selectedDate).getTime()
       );
     }
 
@@ -210,7 +270,7 @@ export default function EventsPage() {
           {filteredEvents.length > 0 ? (
             filteredEvents.map((event) => (
               <EventCard
-                key={event.id}
+                key={event.occurrenceId || event.id}
                 event={event}
                 onClick={() => handleEventClick(event)}
               />
@@ -272,7 +332,8 @@ const Calendar = ({
   };
 
   const hasEventOnDay = (date: Date) => {
-    return events.some((event) => event.date && isSameDay(event.date, date));
+    // Compare using UTC midnight
+    return events.some((event) => event.date && getUTCMidnight(event.date).getTime() === getUTCMidnight(date).getTime());
   };
 
   return (
@@ -679,8 +740,8 @@ const EventModal = ({
               </div>
             </div>
           )}
-{/* Main image and gallery */}
-<div className="space-y-6">
+          {/* Main image and gallery */}
+          <div className="space-y-6">
             {/* Additional images */}
             {event.images && event.images.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">

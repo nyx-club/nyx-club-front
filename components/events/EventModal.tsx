@@ -65,6 +65,7 @@ export default function EventModal({ event, onClose }: EventModalProps) {
                   </Badge>
                 ))}
               </div>
+              
             </div>
           </div>
 
