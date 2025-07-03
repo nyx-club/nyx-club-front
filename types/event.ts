@@ -22,6 +22,7 @@ export interface Event {
   images: string[]
   tags: string[]
   link?: string | null
+  occurrenceId?: string // Unique ID for each event occurrence (for recurrent events)
 }
 
 export interface EventFilters {

@@ -31,7 +31,7 @@ function isLucideComponent(value: any): value is LucideIcon {
 const fetchCategories = async (): Promise<EventCategoryData[]> => {
   try {
     const res = await fetch(
-      "https://nyx-club-back.onrender.com/api/categories?populate=*"
+      "https://nyx-club-back.onrender.com/api/categories"
     );
     if (!res.ok) throw new Error('Failed to fetch categories');
     const { data } = await res.json();
