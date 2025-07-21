@@ -25,6 +25,17 @@ export default function Footer() {
                 Términos de Servicio
               </Link>
             </p>
+            <p className="mt-1 text-xs">
+              Created by{" "}
+              <a 
+                href="https://sojobo.vercel.app" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hover:text-[#B20118] transition-colors"
+              >
+                Sojobo
+              </a>
+            </p>
           </div>
         </div>
       </div>
