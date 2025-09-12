@@ -42,7 +42,7 @@ const generateUpcomingEvents = (): Event[] => {
       id: 1,
       title: 'Taller de Shibari Avanzado',
       description: 'Aprende técnicas avanzadas de Shibari con nuestros expertos.',
-      date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2),
+      date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2).toISOString(),
       time: '18:00 - 20:00',
       location: 'Sala Principal',
       category: 'shibari',

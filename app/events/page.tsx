@@ -32,7 +32,7 @@ import {
   Maximize2,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
-import { Event } from "@/types/event";
+import { Event, EventOccurrence, RecurrenceType } from "@/types/event";
 import EventFilters from "@/components/events/EventFilters";
 
 // Helper to check if a value is a valid Lucide icon
@@ -45,47 +45,88 @@ function isLucideComponent(value: any): value is LucideIcon {
 }
 
 // Helper to expand recurrent events
-function expandRecurrentEvent(event: any) {
-  if (!event.recurrenceType || event.recurrenceType === "none")
-    return [
-      { ...event, occurrenceId: `${event.id}_${event.date instanceof Date ? event.date.toISOString() : event.date}` },
-    ];
+function expandRecurrentEvent(event: Event): EventOccurrence[] {
+  try {
+    // Ensure we have a valid date
+    const eventDate = new Date(event.date);
+    if (isNaN(eventDate.getTime())) {
+      console.warn(`Invalid date for event ${event.id}: ${event.date}`);
+      return [{
+        ...event,
+        occurrenceId: `${event.id}_invalid`,
+        date: new Date()
+      } as EventOccurrence];
+    }
 
-  const startDate = new Date(event.date);
-  const endDate = event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : null;
-  const occurrences = [];
-  let current = new Date(startDate);
+    // For non-recurrent events or when recurrenceType is none/undefined
+    if (!event.recurrenceType || event.recurrenceType === 'none') {
+      return [{
+        ...event,
+        date: eventDate,
+        occurrenceId: `${event.id}_${eventDate.toISOString()}`
+      } as EventOccurrence];
+    }
 
-  if (event.recurrenceType === "weekly") {
-    // Always add the first occurrence
-    while (!endDate || current <= endDate) {
+    // For recurrent events
+    const startDate = new Date(eventDate);
+    let endDate: Date | null = null;
+    
+    if (event.recurrenceEndDate) {
+      endDate = new Date(event.recurrenceEndDate);
+      if (isNaN(endDate.getTime())) {
+        console.warn(`Invalid recurrence end date for event ${event.id}: ${event.recurrenceEndDate}`);
+        endDate = null;
+      }
+    }
+
+    const occurrences: EventOccurrence[] = [];
+    const current = new Date(startDate);
+
+    if (event.recurrenceType === "weekly") {
+      // Always add the first occurrence
+      while (!endDate || current <= endDate) {
+        const occurrenceDate = new Date(current);
+        if (!isNaN(occurrenceDate.getTime())) {
+          occurrences.push({
+            ...event,
+            date: occurrenceDate,
+            isRecurrent: true,
+            occurrenceId: `${event.id}_${occurrenceDate.toISOString()}`
+          } as EventOccurrence);
+        }
+        current.setDate(current.getDate() + 7); // Next week, same weekday
+        if (endDate && current > endDate) break;
+      }
+    } else if (event.recurrenceType === "monthly") {
+      while (!endDate || current <= endDate) {
+        const occurrenceDate = new Date(current);
+        if (!isNaN(occurrenceDate.getTime())) {
+          occurrences.push({
+            ...event,
+            date: occurrenceDate,
+            isRecurrent: true,
+            occurrenceId: `${event.id}_${occurrenceDate.toISOString()}`
+          } as EventOccurrence);
+        }
+        current.setMonth(current.getMonth() + 1);
+        if (endDate && current > endDate) break;
+      }
+    } else {
       occurrences.push({
         ...event,
-        date: new Date(current),
-        isRecurrent: true,
-        occurrenceId: `${event.id}_${current.toISOString()}`,
-      });
-      current.setDate(current.getDate() + 7); // Next week, same weekday
-      if (endDate && current > endDate) break;
+        date: eventDate,
+        occurrenceId: `${event.id}_${eventDate.toISOString()}`
+      } as EventOccurrence);
     }
-  } else if (event.recurrenceType === "monthly") {
-    while (!endDate || current <= endDate) {
-      occurrences.push({
-        ...event,
-        date: new Date(current),
-        isRecurrent: true,
-        occurrenceId: `${event.id}_${current.toISOString()}`,
-      });
-      current.setMonth(current.getMonth() + 1);
-      if (endDate && current > endDate) break;
-    }
-  } else {
-    occurrences.push({
+    return occurrences;
+  } catch (error) {
+    console.error(`Error expanding recurrent event ${event.id}:`, error);
+    return [{
       ...event,
-      occurrenceId: `${event.id}_${event.date instanceof Date ? event.date.toISOString() : event.date}`,
-    });
+      occurrenceId: `${event.id}_error`,
+      date: new Date()
+    } as EventOccurrence];
   }
-  return occurrences;
 }
 
 // Fetch events from Strapi
@@ -133,18 +174,30 @@ const fetchEvents = async () => {
           })
           .filter(Boolean);
       }
-      // Date
-      // Always use the date part (YYYY-MM-DD) as local midnight for day-based logic
+      // Date handling
       let date: Date;
-      if (attrs.date) {
-        // Extract only the date part (YYYY-MM-DD)
-        const dateStr = attrs.date.split('T')[0];
-        const [year, month, day] = dateStr.split('-').map(Number);
-        date = new Date(year, month - 1, day, 0, 0, 0, 0); // local midnight
-      } else {
-        const now = new Date();
-        date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      try {
+        if (attrs.date) {
+          // Extract only the date part (YYYY-MM-DD)
+          const dateStr = typeof attrs.date === 'string' ? attrs.date.split('T')[0] : attrs.date;
+          // Try to parse the date
+          date = new Date(dateStr);
+          // Check if the date is valid
+          if (isNaN(date.getTime())) {
+            console.warn(`Invalid date for event ${item.id}: ${attrs.date}`);
+            // Use current date as fallback
+            date = new Date();
+          }
+        } else {
+          date = new Date();
+        }
+        // Set to local midnight
+        date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+      } catch (error) {
+        console.error(`Error parsing date for event ${item.id}:`, error);
+        date = new Date();
       }
+
       const event = {
         id: item.id,
         title: attrs.title || "",
@@ -174,8 +227,9 @@ const fetchEvents = async () => {
 };
 
 // Helper: get a date at UTC midnight (for day-based logic)
-function getUTCMidnight(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+function getUTCMidnight(date: Date | string) {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
 export default function EventsPage() {
@@ -208,7 +262,7 @@ export default function EventsPage() {
     // Apply category filters
     if (activeFilters.length > 0) {
       filtered = filtered.filter(
-        (event) => event.category && activeFilters.includes(event.category.slug)
+        (event) => event.category?.slug && activeFilters.includes(event.category.slug)
       );
     }
 
@@ -270,7 +324,7 @@ export default function EventsPage() {
           {filteredEvents.length > 0 ? (
             filteredEvents.map((event) => (
               <EventCard
-                key={event.occurrenceId || event.id}
+                key={'occurrenceId' in event ? event.occurrenceId : `${event.id}_single`}
                 event={event}
                 onClick={() => handleEventClick(event)}
               />

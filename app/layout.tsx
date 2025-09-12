@@ -14,6 +14,7 @@ export const viewport: Viewport = {
 };
 
 import { siteConfig } from "@/config/site";
+import Favicon from "@/components/layout/Favicon";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.baseUrl),

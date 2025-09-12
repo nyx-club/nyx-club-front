@@ -20,7 +20,7 @@ export default function EventCard({ event, className = "" }: EventCardProps) {
       <div className="group relative overflow-hidden rounded-lg border border-gray-800 bg-gray-900/50 hover:border-[#B20118]/50 transition-all duration-300 h-full flex flex-col">
         <div className="relative aspect-video">
           <Image
-            src={event.mainImage}
+            src={event.mainImage || '/images/default-event.jpg'}
             alt={event.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -43,14 +43,14 @@ export default function EventCard({ event, className = "" }: EventCardProps) {
             </h3>
             <div className="flex items-center text-sm text-gray-400 mb-3">
               <CalendarIcon className="w-4 h-4 mr-2" />
-              {format(event.date, "d 'de' MMMM yyyy", { locale: es })}
+              {format(typeof event.date === 'string' ? new Date(event.date) : event.date, "d 'de' MMMM yyyy", { locale: es })}
             </div>
             <p className="text-gray-300 line-clamp-3">{event.description}</p>
           </div>
           
           <div className="mt-4 pt-4 border-t border-gray-800">
             <div className="flex flex-wrap gap-2">
-              {event.tags.map((tag) => (
+              {event.tags?.map((tag) => (
                 <Badge key={tag} variant="outline" className="text-xs">
                   {tag}
                 </Badge>
