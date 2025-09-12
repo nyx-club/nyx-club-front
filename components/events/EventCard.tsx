@@ -10,7 +10,6 @@ interface CloudinaryImage {
 function isCloudinaryImage(img: unknown): img is CloudinaryImage {
   return typeof img === 'object' && img !== null && ('formats' in img || 'url' in img);
 }
-import { Event } from "@/types/event"
 import { eventCategories } from "@/data/events"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -18,13 +17,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { CalendarIcon } from "lucide-react"
-
-interface EventCardProps {
-  event: Event
-  className?: string
-}
-
-export default function EventCard({ event, className = "" }: EventCardProps) {
+    export default function EventCard({ event, className = "" }: { event: any; className?: string }) {
   const category = event.category ? eventCategories[event.category as keyof typeof eventCategories] : undefined;
 
   // Imagen: si no hay, mostrar placeholder visual
@@ -92,7 +85,7 @@ export default function EventCard({ event, className = "" }: EventCardProps) {
 
           <div className="mt-4 pt-4 border-t border-gray-800">
             <div className="flex flex-wrap gap-2">
-              {event.tags?.map((tag) => (
+              {event.tags?.map((tag: string) => (
                 <Badge key={tag} variant="outline" className="text-xs">
                   {tag}
                 </Badge>

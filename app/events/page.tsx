@@ -255,11 +255,17 @@ const EventCard = ({ event }: { event: any }) => {
       {event.mainImage && (
         <img src={event.mainImage} alt={event.title} className="w-full max-h-64 object-cover rounded mb-2" />
       )}
-      {event.link && (
-        <a href={event.link} target="_blank" rel="noopener noreferrer" className="text-[#B20118] underline">Ver más</a>
-      )}
+        {event.link && (
+          <a href={event.link} target="_blank" rel="noopener noreferrer">
+            <button
+              className="bg-[#B20118] text-white px-4 py-2 rounded hover:bg-[#B20118]/80 transition-colors mt-2 w-full"
+              type="button"
+            >
+              Ver más en Fetlife
+            </button>
+          </a>
+        )}
     </div>
   );
 };
 
-// ...existing code...
