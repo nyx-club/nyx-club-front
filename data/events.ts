@@ -1,3 +1,4 @@
+// Deprecated: All event data and helpers removed. Events are now fetched from the API in the events page.
 import { Event, EventCategory, EventCategoryData } from "@/types/event"
 import { BookOpen, Film, Ribbon } from "lucide-react"
 

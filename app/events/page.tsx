@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   format,
   startOfMonth,
@@ -11,10 +10,9 @@ import {
   isSameMonth,
   addMonths,
   subMonths,
-  parseISO,
-  isAfter,
-  isBefore,
 } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+import { useState, useEffect, useMemo } from "react";
 import { es } from "date-fns/locale";
 import {
   ChevronLeft,
@@ -23,289 +21,84 @@ import {
   Clock,
   MapPin,
   Users,
-  Circle,
-  X,
-  LucideIcon,
-  ChevronLeft as LeftIcon,
-  ChevronRight as RightIcon,
-  X as CloseIcon,
-  Maximize2,
+  RotateCcw,
 } from "lucide-react";
-import * as LucideIcons from "lucide-react";
-import { Event, EventOccurrence, RecurrenceType } from "@/types/event";
-import EventFilters from "@/components/events/EventFilters";
 
-// Helper to check if a value is a valid Lucide icon
-function isLucideComponent(value: any): value is LucideIcon {
-  return (
-    typeof value === "function" &&
-    value.displayName &&
-    value.displayName.startsWith("Lucide")
-  );
-}
+// ...existing code...
 
-// Helper to expand recurrent events
-function expandRecurrentEvent(event: Event): EventOccurrence[] {
-  try {
-    // Ensure we have a valid date
-    const eventDate = new Date(event.date);
-    if (isNaN(eventDate.getTime())) {
-      console.warn(`Invalid date for event ${event.id}: ${event.date}`);
-      return [{
-        ...event,
-        occurrenceId: `${event.id}_invalid`,
-        date: new Date()
-      } as EventOccurrence];
-    }
-
-    // For non-recurrent events or when recurrenceType is none/undefined
-    if (!event.recurrenceType || event.recurrenceType === 'none') {
-      return [{
-        ...event,
-        date: eventDate,
-        occurrenceId: `${event.id}_${eventDate.toISOString()}`
-      } as EventOccurrence];
-    }
-
-    // For recurrent events
-    const startDate = new Date(eventDate);
-    let endDate: Date | null = null;
-    
-    if (event.recurrenceEndDate) {
-      endDate = new Date(event.recurrenceEndDate);
-      if (isNaN(endDate.getTime())) {
-        console.warn(`Invalid recurrence end date for event ${event.id}: ${event.recurrenceEndDate}`);
-        endDate = null;
-      }
-    }
-
-    const occurrences: EventOccurrence[] = [];
-    const current = new Date(startDate);
-
-    if (event.recurrenceType === "weekly") {
-      // Always add the first occurrence
-      while (!endDate || current <= endDate) {
-        const occurrenceDate = new Date(current);
-        if (!isNaN(occurrenceDate.getTime())) {
-          occurrences.push({
-            ...event,
-            date: occurrenceDate,
-            isRecurrent: true,
-            occurrenceId: `${event.id}_${occurrenceDate.toISOString()}`
-          } as EventOccurrence);
-        }
-        current.setDate(current.getDate() + 7); // Next week, same weekday
-        if (endDate && current > endDate) break;
-      }
-    } else if (event.recurrenceType === "monthly") {
-      while (!endDate || current <= endDate) {
-        const occurrenceDate = new Date(current);
-        if (!isNaN(occurrenceDate.getTime())) {
-          occurrences.push({
-            ...event,
-            date: occurrenceDate,
-            isRecurrent: true,
-            occurrenceId: `${event.id}_${occurrenceDate.toISOString()}`
-          } as EventOccurrence);
-        }
-        current.setMonth(current.getMonth() + 1);
-        if (endDate && current > endDate) break;
-      }
-    } else {
-      occurrences.push({
-        ...event,
-        date: eventDate,
-        occurrenceId: `${event.id}_${eventDate.toISOString()}`
-      } as EventOccurrence);
-    }
-    return occurrences;
-  } catch (error) {
-    console.error(`Error expanding recurrent event ${event.id}:`, error);
-    return [{
-      ...event,
-      occurrenceId: `${event.id}_error`,
-      date: new Date()
-    } as EventOccurrence];
-  }
-}
-
-// Fetch events from Strapi
 const fetchEvents = async () => {
   try {
-    // Use a specific populate query for all relations
-    const res = await fetch(
-      "https://nyx-club-back.onrender.com/api/events?populate=*"
-    );
+    const res = await fetch("https://nyx-club-back.onrender.com/api/events?populate=*");
     if (!res.ok) throw new Error("Failed to fetch events");
     const { data } = await res.json();
-    let allEvents: any[] = [];
-    data.forEach((item: any) => {
-      const attrs = item.attributes || item;
-      // Prefer large format, fallback to main url
-      // Handle new API: mainImage is an object with formats and url
-      let mainImageUrl = null;
-      if (attrs.mainImage && typeof attrs.mainImage === "object") {
-        const mainImage = attrs.mainImage;
-        // Prefer large, fallback to url
-        const url = mainImage.formats?.large?.url || mainImage.url;
-        if (url) mainImageUrl = url;
-      }
-      // Category
-      let category = null;
-      if (attrs.category) {
-        category = {
-          id: attrs.category.id,
-          name: attrs.category.name,
-          slug: attrs.category.slug,
-          icon: attrs.category.icon,
-          bgColor: attrs.category.bgColor || "bg-gray-500/20",
-          textColor: attrs.category.textColor || "text-gray-300",
-        };
-      }
-      // Images
-      // New API: images is an array of objects or null
-      let images: string[] = [];
-      if (Array.isArray(attrs.images)) {
-        images = attrs.images
-          .map((img: any) => {
-            // Prefer large, fallback to url
-            const url = img.formats?.large?.url || img.url;
-            return url || null;
-          })
-          .filter(Boolean);
-      }
-      // Date handling
-      let date: Date;
-      try {
-        if (attrs.date) {
-          // Extract only the date part (YYYY-MM-DD)
-          const dateStr = typeof attrs.date === 'string' ? attrs.date.split('T')[0] : attrs.date;
-          // Try to parse the date
-          date = new Date(dateStr);
-          // Check if the date is valid
-          if (isNaN(date.getTime())) {
-            console.warn(`Invalid date for event ${item.id}: ${attrs.date}`);
-            // Use current date as fallback
-            date = new Date();
-          }
-        } else {
-          date = new Date();
-        }
-        // Set to local midnight
-        date = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-      } catch (error) {
-        console.error(`Error parsing date for event ${item.id}:`, error);
-        date = new Date();
-      }
-
-      const event = {
-        id: item.id,
-        title: attrs.title || "",
-        description: attrs.description || "",
-        date,
-        time: attrs.time || "",
-        location: attrs.location || "NYX BDSM Club - Calle Amaniel 13",
-        category,
-        capacity: attrs.capacity || null,
-        mainImage: mainImageUrl,
-        images,
-        tags: attrs.tags || [],
-        slug: attrs.slug || "",
-        link: attrs.link || null,
-        recurrenceType: attrs.recurrenceType || "none",
-        recurrenceEndDate: attrs.recurrenceEndDate || null,
-      };
-      // Expand recurrent events
-      const expanded = expandRecurrentEvent(event);
-      allEvents = allEvents.concat(expanded);
-    });
-    return allEvents;
+    return data.map((item: any) => ({
+      id: item.id,
+      title: item.title || "",
+      description: item.description || [],
+      date: item.date ? new Date(item.date) : null,
+      time: item.time || "",
+      location: "NYX BDSM Club - Calle Amaniel 13",
+      mainImage: item.mainImage?.url || null,
+      images: item.images?.map((img: any) => img.url) || [],
+      tags: item.tags || [],
+      link: item.link || null,
+    }));
   } catch (error) {
     console.error("Error fetching events:", error);
     return [];
   }
 };
 
-// Helper: get a date at UTC midnight (for day-based logic)
-function getUTCMidnight(date: Date | string) {
+// Helper: get Madrid time at midnight (for day-based logic)
+const MADRID_TZ = "Europe/Madrid";
+function getMadridMidnight(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const madridDate = toZonedTime(d, MADRID_TZ);
+  madridDate.setHours(0, 0, 0, 0);
+  return madridDate;
 }
 
 export default function EventsPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [events, setEvents] = useState<Event[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<"all" | "upcoming" | "past">(
-    "upcoming"
-  );
+  const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchEvents().then((fetchedEvents) => {
-      if (Array.isArray(fetchedEvents)) {
-        setEvents(fetchedEvents);
-      } else {
-        console.error("Fetched events is not an array:", fetchedEvents);
-        setEvents([]);
-      }
-    });
+    fetchEvents().then(setEvents);
   }, []);
 
+  // Only show events for the selected date, or all upcoming events if no date is selected
+  const nowMadrid = toZonedTime(new Date(), MADRID_TZ);
   const filteredEvents = useMemo(() => {
-    if (!Array.isArray(events)) return [];
-
-    let filtered = [...events];
-
-    // Apply category filters
-    if (activeFilters.length > 0) {
-      filtered = filtered.filter(
-        (event) => event.category?.slug && activeFilters.includes(event.category.slug)
-      );
-    }
-
-    // Apply time-based filtering
-    const now = new Date();
-    switch (viewMode) {
-      case "upcoming":
-        filtered = filtered.filter(
-          (event) => event.date && isAfter(event.date, now)
-        );
-        break;
-      case "past":
-        filtered = filtered.filter(
-          (event) => event.date && isBefore(event.date, now)
-        );
-        break;
-    }
-
-    // Apply date filter
     if (selectedDate) {
-      filtered = filtered.filter(
-        (event) => event.date && getUTCMidnight(event.date).getTime() === getUTCMidnight(selectedDate).getTime()
-      );
+      // Show events for the selected date only (Madrid time)
+      return events
+        .filter((event: any) => event.date && isSameDay(getMadridMidnight(event.date), getMadridMidnight(selectedDate)))
+        .sort((a: any, b: any) => a.date - b.date);
     }
-
-    // Sort by date descending (most recent first)
-    if (filtered.length > 1) {
-      filtered.sort((a, b) => (b.date as any) - (a.date as any));
-    }
-
-    return filtered;
-  }, [events, activeFilters, viewMode, selectedDate]);
-
-  const handleEventClick = useCallback((event: Event) => {
-    setSelectedEvent(event);
-    setIsModalOpen(true);
-  }, []);
+    // Show all upcoming events (Madrid time)
+    return events
+      .filter((event: any) => event.date && getMadridMidnight(event.date) >= getMadridMidnight(nowMadrid))
+      .sort((a: any, b: any) => a.date - b.date);
+  }, [events, selectedDate]);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8">Eventos</h1>
-      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-[350px_1fr] gap-8">
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium text-white/80">Calendario</span>
+            <button
+              onClick={() => setSelectedDate(null)}
+              className={`p-2 rounded-full hover:bg-[#B20118]/10 transition-colors ${selectedDate ? '' : 'opacity-60'}`}
+              aria-label="Resetear selección de fecha"
+              title="Resetear selección de fecha"
+              disabled={!selectedDate}
+            >
+              <RotateCcw className="w-5 h-5 text-[#B20118]" />
+            </button>
+          </div>
           <Calendar
             currentMonth={currentMonth}
             onMonthChange={setCurrentMonth}
@@ -313,39 +106,19 @@ export default function EventsPage() {
             onDateSelect={setSelectedDate}
             events={events}
           />
-          <EventFilters
-            activeFilters={activeFilters}
-            viewMode={viewMode}
-            onFilterChange={setActiveFilters}
-            onViewModeChange={setViewMode}
-          />
         </div>
         <div className="space-y-4">
           {filteredEvents.length > 0 ? (
-            filteredEvents.map((event) => (
-              <EventCard
-                key={'occurrenceId' in event ? event.occurrenceId : `${event.id}_single`}
-                event={event}
-                onClick={() => handleEventClick(event)}
-              />
+            filteredEvents.map((event: any) => (
+              <EventCard key={event.id} event={event} />
             ))
           ) : (
             <p className="text-gray-500 text-center py-8">
-              No hay eventos que coincidan con los filtros seleccionados.
+              No hay eventos para esta fecha.
             </p>
           )}
         </div>
       </div>
-      {selectedEvent && (
-        <EventModal
-          event={selectedEvent}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedEvent(null);
-          }}
-          isOpen={isModalOpen}
-        />
-      )}
     </div>
   );
 }
@@ -362,7 +135,7 @@ const Calendar = ({
   onMonthChange: (date: Date) => void;
   selectedDate: Date | null;
   onDateSelect: (date: Date) => void;
-  events: Event[];
+  events: any[];
 }) => {
   const days = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -386,8 +159,8 @@ const Calendar = ({
   };
 
   const hasEventOnDay = (date: Date) => {
-    // Compare using UTC midnight
-    return events.some((event) => event.date && getUTCMidnight(event.date).getTime() === getUTCMidnight(date).getTime());
+    // Compare using Madrid midnight
+    return events.some((event) => event.date && getMadridMidnight(event.date).getTime() === getMadridMidnight(date).getTime());
   };
 
   return (
@@ -463,41 +236,13 @@ const Calendar = ({
 };
 
 // EventCard component
-const EventCard = ({
-  event,
-  onClick,
-}: {
-  event: Event;
-  onClick: () => void;
-}) => {
-  let IconComponent = Circle;
-  if (event.category?.icon) {
-    const DynamicIcon =
-      LucideIcons[event.category.icon as keyof typeof LucideIcons];
-    if (isLucideComponent(DynamicIcon)) {
-      IconComponent = DynamicIcon;
-    }
-  }
-
+const EventCard = ({ event }: { event: any }) => {
   return (
-    <div
-      className="border border-[#B20118]/20 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-lg transition-all hover:border-[#B20118]/40 hover:bg-[#B20118]/5"
-      onClick={onClick}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-lg font-semibold">{event.title}</h3>
-        {event.category && (
-          <span
-            className={`${event.category.bgColor} ${event.category.textColor} text-xs px-2 py-1 rounded-full flex items-center gap-1`}
-          >
-            <IconComponent className="w-4 h-4 mr-1" />
-            {event.category.name}
-          </span>
-        )}
-      </div>
+    <div className="border border-[#B20118]/20 rounded-lg p-4 mb-4">
+      <h3 className="text-lg font-semibold mb-2">{event.title}</h3>
       <div className="flex items-center text-sm text-gray-400 mb-2">
         <CalendarIcon className="w-4 h-4 mr-1" />
-        <span>{format(event.date, "EEEE d MMMM yyyy", { locale: es })}</span>
+  <span>{event.date ? format(toZonedTime(event.date, MADRID_TZ), "EEEE d MMMM yyyy", { locale: es }) : ""}</span>
       </div>
       <div className="flex items-center text-sm text-gray-400 mb-2">
         <Clock className="w-4 h-4 mr-1" />
@@ -507,350 +252,14 @@ const EventCard = ({
         <MapPin className="w-4 h-4 mr-1" />
         <span>{event.location}</span>
       </div>
-      {event.capacity && (
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-400">
-            <Users className="w-4 h-4 inline mr-1" />
-            {event.capacity}
-          </div>
-        </div>
+      {event.mainImage && (
+        <img src={event.mainImage} alt={event.title} className="w-full max-h-64 object-cover rounded mb-2" />
+      )}
+      {event.link && (
+        <a href={event.link} target="_blank" rel="noopener noreferrer" className="text-[#B20118] underline">Ver más</a>
       )}
     </div>
   );
 };
 
-// Helper function to render rich text content
-const renderRichText = (content: any) => {
-  if (!content) return null;
-
-  if (typeof content === "string") {
-    return <p className="mb-4">{content}</p>;
-  }
-
-  if (Array.isArray(content)) {
-    return content.map((item, index) => (
-      <div key={index} className="mb-4">
-        {item.children?.map((child: any, i: number) => {
-          if (child.type === "text") {
-            let className = "";
-            if (child.bold) className += " font-bold";
-            if (child.italic) className += " italic";
-            if (child.underline) className += " underline";
-
-            return (
-              <span key={i} className={className}>
-                {child.text}
-              </span>
-            );
-          }
-          return null;
-        })}
-      </div>
-    ));
-  }
-
-  return null;
-};
-
-// Image Gallery Component
-const ImageGallery = ({
-  images,
-  title,
-}: {
-  images: string[];
-  title: string;
-}) => {
-  const [selectedImage, setSelectedImage] = useState<number | null>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  const openImage = (index: number) => {
-    setSelectedImage(index);
-    document.body.style.overflow = "hidden";
-  };
-
-  const closeImage = () => {
-    setSelectedImage(null);
-    document.body.style.overflow = "unset";
-  };
-
-  const navigate = (direction: "prev" | "next") => {
-    if (selectedImage === null) return;
-
-    if (direction === "prev") {
-      setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev! - 1));
-    } else {
-      setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev! + 1));
-    }
-  };
-
-  // Close modal when clicking outside the image
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        modalRef.current &&
-        !modalRef.current.contains(event.target as Node)
-      ) {
-        closeImage();
-      }
-    };
-
-    if (selectedImage !== null) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeImage();
-        if (e.key === "ArrowLeft") navigate("prev");
-        if (e.key === "ArrowRight") navigate("next");
-      });
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", () => {});
-    };
-  }, [selectedImage]);
-
-  if (!images || images.length === 0) return null;
-
-  return (
-    <div className="mb-8">
-      <h3 className="text-xl font-semibold mb-4">{title}</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {images.map((image, index) => (
-          <div
-            key={index}
-            className="group relative aspect-square overflow-hidden rounded-lg bg-gray-800 cursor-zoom-in"
-            onClick={() => openImage(index)}
-          >
-            <img
-              src={image}
-              alt={`${title} - Imagen ${index + 1}`}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Maximize2 className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Lightbox Modal */}
-      {selectedImage !== null && (
-        <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4">
-          <button
-            onClick={closeImage}
-            className="absolute top-4 right-4 text-white hover:text-[#B20118] transition-colors p-2"
-            aria-label="Cerrar"
-          >
-            <CloseIcon className="w-8 h-8" />
-          </button>
-
-          <div
-            className="relative w-full max-w-5xl h-full flex items-center"
-            ref={modalRef}
-          >
-            <button
-              onClick={() => navigate("prev")}
-              className="absolute left-4 p-2 text-white hover:text-[#B20118] transition-colors z-10"
-              aria-label="Imagen anterior"
-            >
-              <LeftIcon className="w-8 h-8" />
-            </button>
-
-            <div className="w-full h-full flex items-center justify-center">
-              <img
-                src={images[selectedImage]}
-                alt={`${title} - Imagen ${selectedImage + 1}`}
-                className="max-h-[90vh] max-w-full object-contain"
-              />
-            </div>
-
-            <button
-              onClick={() => navigate("next")}
-              className="absolute right-4 p-2 text-white hover:text-[#B20118] transition-colors z-10"
-              aria-label="Siguiente imagen"
-            >
-              <RightIcon className="w-8 h-8" />
-            </button>
-
-            <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm">
-              {selectedImage + 1} / {images.length}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// EventModal component
-const EventModal = ({
-  event,
-  onClose,
-  isOpen,
-}: {
-  event: Event | null;
-  onClose: () => void;
-  isOpen: boolean;
-}) => {
-  if (!isOpen || !event) return null;
-
-  let IconComponent = Circle;
-  if (event.category?.icon) {
-    const DynamicIcon =
-      LucideIcons[event.category.icon as keyof typeof LucideIcons];
-    if (isLucideComponent(DynamicIcon)) {
-      IconComponent = DynamicIcon;
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div
-        className="bg-black border border-[#B20118]/30 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 z-20 p-2 text-gray-300 hover:text-white transition-colors"
-          aria-label="Cerrar"
-        >
-          <X className="w-6 h-6" />
-        </button>
-
-        {/* Event header with title and category */}
-        <div className="sticky top-0 bg-black/90 backdrop-blur-sm z-10 p-4 border-b border-gray-800 pr-16">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-white pr-4">
-              {event.title}
-            </h2>
-            {event.category && (
-              <span
-                className={`${event.category.bgColor || "bg-gray-800"} ${
-                  event.category.textColor || "text-white"
-                } text-sm px-4 py-2 rounded-full flex items-center w-fit shrink-0`}
-              >
-                <IconComponent className="w-4 h-4 mr-2" />
-                {event.category.name}
-              </span>
-            )}
-          </div>
-        </div>
-        {/* Main content */}
-        <div className="p-6">
-          {/* Event metadata */}
-          {event.mainImage && (
-            <div className="mb-6 rounded-lg overflow-hidden group relative">
-              <img
-                src={event.mainImage}
-                alt={event.title}
-                className="w-full h-auto max-h-[70vh] object-contain mx-auto bg-black"
-                style={{ maxWidth: "100%", height: "auto" }}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = "/images/placeholder-event.jpg"; // Fallback image
-                }}
-                loading="lazy"
-              />
-            </div>
-          )}
-          <div className="space-y-3 mb-6 text-gray-300">
-            <div className="flex items-center">
-              <CalendarIcon className="w-5 h-5 mr-3 text-[#B20118]" />
-              <span>
-                {event.date
-                  ? format(event.date, "EEEE d 'de' MMMM yyyy", { locale: es })
-                  : "Fecha no disponible"}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <Clock className="w-5 h-5 mr-3 text-[#B20118]" />
-              <span>{event.time || "Hora por confirmar"}</span>
-            </div>
-            <div className="flex items-start">
-              <MapPin className="w-5 h-5 mr-3 mt-0.5 text-[#B20118] flex-shrink-0" />
-              <span>{event.location || "Ubicación por confirmar"}</span>
-            </div>
-            {event.capacity && (
-              <div className="flex items-center">
-                <Users className="w-5 h-5 mr-3 text-[#B20118]" />
-                <span>Aforo: {event.capacity} personas</span>
-              </div>
-            )}
-          </div>
-
-          {/* Event description */}
-          {event.description && (
-            <div className="prose prose-invert max-w-none mb-8">
-              <h3 className="text-xl font-semibold mb-4">
-                Descripción del evento
-              </h3>
-              <div className="space-y-4 text-gray-300">
-                {renderRichText(event.description)}
-              </div>
-            </div>
-          )}
-          {/* Main image and gallery */}
-          <div className="space-y-6">
-            {/* Additional images */}
-            {event.images && event.images.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {event.images
-                  .filter((img) => img)
-                  .map((image, index) => (
-                    <div
-                      key={index}
-                      className="aspect-square overflow-hidden rounded-lg bg-gray-900"
-                    >
-                      <img
-                        src={image}
-                        alt={`${event.title} - Imagen ${index + 1}`}
-                        className="w-full h-full object-cover hover:opacity-90 transition-opacity"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/images/placeholder-event.jpg"; // Fallback image
-                        }}
-                        loading="lazy"
-                      />
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-          {/* Tags */}
-          {event.tags && event.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-8">
-              {event.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 text-sm rounded-full bg-gray-800 text-gray-300"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Action button */}
-          {event.link && (
-            <div className="pt-6 mt-6 border-t border-gray-800">
-              <a
-                href={event.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center w-full px-6 py-3 bg-[#B20118] text-white rounded-lg hover:bg-[#8B0112] transition-colors font-medium text-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Reservar plaza
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+// ...existing code...
