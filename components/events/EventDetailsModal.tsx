@@ -8,6 +8,8 @@ import { toZonedTime } from "date-fns-tz";
 import { MADRID_TZ } from "@/app/events/page"; // reuse constant (export it)
 import Image from "next/image";
 import { AnyEvent } from "@/types/event";
+import { useState } from "react";
+import GalleryLightbox from "./GalleryLightbox";
 
 interface Props {
   event: AnyEvent | null;
@@ -49,6 +51,7 @@ export default function EventDetailsModal({ event, open, onOpenChange }: Props) 
   const recurrenceInfo = event.recurrenceType === 'weekly' && event.recurrenceEndDate ?
     `Evento semanal hasta ${format(new Date(event.recurrenceEndDate), "d MMM yyyy", { locale: es })}` : null;
   const tags: string[] = Array.isArray(event.tags) ? event.tags : [];
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -116,14 +119,20 @@ export default function EventDetailsModal({ event, open, onOpenChange }: Props) 
               <h4 className="font-semibold mb-3 text-xs uppercase tracking-wide text-[#ff445c]">Galería</h4>
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {event.images.map((src, i) => (
-                  <div key={i} className="relative w-full rounded-lg ring-1 ring-white/10 bg-black/40 p-2 flex items-center justify-center group">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex(i)}
+                    key={i}
+                    className="relative w-full rounded-lg ring-1 ring-white/10 bg-black/40 p-2 flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-[#ff445c]"
+                    aria-label={`Abrir imagen ${i + 1} en pantalla completa`}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
                       alt={`${event.title} ${i + 1}`}
                       className="max-h-60 w-auto object-contain transition duration-300 group-hover:scale-[1.02] drop-shadow-md"
                     />
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -132,6 +141,14 @@ export default function EventDetailsModal({ event, open, onOpenChange }: Props) 
         <div className="px-6 py-4 border-t border-white/5 bg-neutral-950/60 flex justify-end gap-3">
           <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-gray-300 hover:text-white hover:bg-white/10">Cerrar</Button>
         </div>
+        {lightboxIndex !== null && event.images && (
+          <GalleryLightbox
+            images={event.images}
+            index={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+            onIndexChange={(i)=> setLightboxIndex(i)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
