@@ -14,19 +14,13 @@ import {
 import { toZonedTime } from "date-fns-tz";
 import { useState, useEffect, useMemo } from "react";
 import { es } from "date-fns/locale";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Calendar as CalendarIcon,
-  Clock,
-  MapPin,
-  Users,
-  RotateCcw,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, Users, RotateCcw } from "lucide-react";
+import { expandRecurringEvents } from '@/lib/utils';
+import { AnyEvent, RawEvent } from '@/types/event';
 
 // ...existing code...
 
-const fetchEvents = async () => {
+const fetchEvents = async (): Promise<RawEvent[]> => {
   try {
     const res = await fetch("https://nyx-club-back.onrender.com/api/events?populate=*");
     if (!res.ok) throw new Error("Failed to fetch events");
@@ -42,6 +36,8 @@ const fetchEvents = async () => {
       images: item.images?.map((img: any) => img.url) || [],
       tags: item.tags || [],
       link: item.link || null,
+  recurrenceType: item.recurrenceType || null,
+  recurrenceEndDate: item.recurrenceEndDate || null,
     }));
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -61,11 +57,20 @@ function getMadridMidnight(date: Date | string) {
 export default function EventsPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [events, setEvents] = useState<any[]>([]);
+  const [rawEvents, setRawEvents] = useState<RawEvent[]>([]);
+  const [events, setEvents] = useState<AnyEvent[]>([]); // expanded occurrences
 
   useEffect(() => {
-    fetchEvents().then(setEvents);
+    fetchEvents().then((data) => {
+      setRawEvents(data);
+      setEvents(expandRecurringEvents(data));
+    });
   }, []);
+
+  // Re-expand if rawEvents changes (future: filters, etc.)
+  useEffect(() => {
+    setEvents(expandRecurringEvents(rawEvents));
+  }, [rawEvents]);
 
   // Only show events for the selected date, or all upcoming events if no date is selected
   const nowMadrid = toZonedTime(new Date(), MADRID_TZ);
