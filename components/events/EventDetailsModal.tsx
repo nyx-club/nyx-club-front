@@ -114,11 +114,15 @@ export default function EventDetailsModal({ event, open, onOpenChange }: Props) 
           {event.images && event.images.length > 0 && (
             <div>
               <h4 className="font-semibold mb-3 text-xs uppercase tracking-wide text-[#ff445c]">Galería</h4>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 {event.images.map((src, i) => (
-                  <div key={i} className="relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 group">
+                  <div key={i} className="relative w-full rounded-lg ring-1 ring-white/10 bg-black/40 p-2 flex items-center justify-center group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={`${event.title} ${i+1}`} className="object-cover w-full h-full transition duration-300 group-hover:scale-105" />
+                    <img
+                      src={src}
+                      alt={`${event.title} ${i + 1}`}
+                      className="max-h-60 w-auto object-contain transition duration-300 group-hover:scale-[1.02] drop-shadow-md"
+                    />
                   </div>
                 ))}
               </div>
