@@ -15,6 +15,7 @@ import { toZonedTime } from "date-fns-tz";
 import { useState, useEffect, useMemo } from "react";
 import { es } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, Users, RotateCcw } from "lucide-react";
+import EventDetailsModal from '@/components/events/EventDetailsModal';
 import { expandRecurringEvents } from '@/lib/utils';
 import { AnyEvent, RawEvent } from '@/types/event';
 
@@ -46,7 +47,7 @@ const fetchEvents = async (): Promise<RawEvent[]> => {
 };
 
 // Helper: get Madrid time at midnight (for day-based logic)
-const MADRID_TZ = "Europe/Madrid";
+export const MADRID_TZ = "Europe/Madrid";
 function getMadridMidnight(date: Date | string) {
   const d = typeof date === 'string' ? new Date(date) : date;
   const madridDate = toZonedTime(d, MADRID_TZ);
@@ -55,6 +56,7 @@ function getMadridMidnight(date: Date | string) {
 }
 
 export default function EventsPage() {
+  const [openEvent, setOpenEvent] = useState<AnyEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [rawEvents, setRawEvents] = useState<RawEvent[]>([]);
@@ -111,19 +113,18 @@ export default function EventsPage() {
             onDateSelect={setSelectedDate}
             events={events}
           />
-        </div>
+        </div>{/* end left column (calendar) */}
         <div className="space-y-4">
           {filteredEvents.length > 0 ? (
             filteredEvents.map((event: any) => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id + (event.date?.toString()||'')} event={event} onClick={() => setOpenEvent(event)} />
             ))
           ) : (
-            <p className="text-gray-500 text-center py-8">
-              No hay eventos para esta fecha.
-            </p>
+            <p className="text-gray-500 text-center py-8">No hay eventos para esta fecha.</p>
           )}
         </div>
-      </div>
+      </div>{/* end grid container */}
+      <EventDetailsModal event={openEvent} open={!!openEvent} onOpenChange={(o)=>!o && setOpenEvent(null)} />
     </div>
   );
 }
@@ -241,13 +242,13 @@ const Calendar = ({
 };
 
 // EventCard component
-const EventCard = ({ event }: { event: any }) => {
+const EventCard = ({ event, onClick }: { event: any; onClick?: () => void }) => {
   return (
-    <div className="border border-[#B20118]/20 rounded-lg p-4 mb-4">
+    <button onClick={onClick} className="text-left w-full border border-[#B20118]/20 rounded-lg p-4 mb-4 hover:border-[#B20118]/40 transition-colors">
       <h3 className="text-lg font-semibold mb-2">{event.title}</h3>
       <div className="flex items-center text-sm text-gray-400 mb-2">
         <CalendarIcon className="w-4 h-4 mr-1" />
-  <span>{event.date ? format(toZonedTime(event.date, MADRID_TZ), "EEEE d MMMM yyyy", { locale: es }) : ""}</span>
+        <span>{event.date ? format(toZonedTime(event.date, MADRID_TZ), "EEEE d MMMM yyyy", { locale: es }) : ""}</span>
       </div>
       <div className="flex items-center text-sm text-gray-400 mb-2">
         <Clock className="w-4 h-4 mr-1" />
@@ -260,17 +261,12 @@ const EventCard = ({ event }: { event: any }) => {
       {event.mainImage && (
         <img src={event.mainImage} alt={event.title} className="w-full max-h-64 object-cover rounded mb-2" />
       )}
-        {event.link && (
-          <a href={event.link} target="_blank" rel="noopener noreferrer">
-            <button
-              className="bg-[#B20118] text-white px-4 py-2 rounded hover:bg-[#B20118]/80 transition-colors mt-2 w-full"
-              type="button"
-            >
-              Ver más en Fetlife
-            </button>
-          </a>
-        )}
-    </div>
+      {event.link && (
+        <a href={event.link} target="_blank" rel="noopener noreferrer" onClick={(e)=> e.stopPropagation()}>
+          <span className="inline-block bg-[#B20118] text-white px-4 py-2 rounded hover:bg-[#B20118]/80 transition-colors mt-2 w-full text-center text-sm font-medium">Ver más en Fetlife</span>
+        </a>
+      )}
+    </button>
   );
 };
 
